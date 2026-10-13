@@ -1,23 +1,23 @@
 /* =========================================================
-   Fiori OS — built on the Fiori Gelato tokens, with a Bean
-   theme for evening production work.
+   Fiori OS — built on the Fiori Gelato tokens.
 
-   Flat fields and hairline rules do the separating; the
-   identity carries no shadows, gradients or tints. Deep Blue
-   and Bean are never put on each other, so the dark theme
-   drops Deep Blue and lets Nuts carry the accent.
+   White is the page and Latte lifts the cards off it; Deep
+   Blue and Terracota carry the type. The dark theme is a Deep
+   Blue field with Latte reversed out of it, the same lockup
+   the brand uses behind the logo. Flat fields and hairline
+   rules do the separating — no shadows, gradients or tints.
    ========================================================= */
 
 :root {
-  --os-bg: #f4eee5;          /* Latte */
-  --os-surface: #ffffff;
-  --os-surface-2: #f4eee5;
+  --os-bg: #ffffff;
+  --os-surface: #ffffff;     /* White page and white cards, told apart by the rule */
+  --os-surface-2: #f4eee5;   /* Latte for hover and quiet fills */
   --os-line: #d3ad80;        /* Nuts hairline */
-  --os-text: #073c8c;        /* Deep Blue, 10.3:1 on white */
+  --os-text: #073c8c;        /* Deep Blue, 10.3:1 on white, 9.0:1 on Latte */
   --os-muted: #ab501b;       /* Terracota, 5.4:1 on white — never below 12px */
-  --os-soft: #301607;        /* Bean */
+  --os-soft: #073c8c;
   --os-accent: #073c8c;
-  --os-accent-soft: #d3ad80; /* Deep Blue on Nuts is 4.9:1 */
+  --os-accent-soft: #d3ad80;
   --os-caramel: #ab501b;
   --os-caramel-soft: #d3ad80;
   --os-danger: #ab501b;      /* No red in the palette; Terracota carries attention */
@@ -34,20 +34,20 @@
 }
 
 [data-os-theme="dark"] {
-  --os-bg: #301607;          /* Bean */
-  --os-surface: #301607;
-  --os-surface-2: #3f2010;
-  --os-line: #d3ad80;        /* 8.1:1 on Bean — the hairline does the work */
-  --os-text: #f4eee5;        /* Latte, 14.6:1 on Bean */
-  --os-muted: #d3ad80;       /* Nuts, 8.1:1; Terracota cannot be read on Bean */
+  --os-bg: #073c8c;          /* Deep Blue leads */
+  --os-surface: #073c8c;
+  --os-surface-2: #052c66;   /* Hover, a step deeper into the blue */
+  --os-line: #d3ad80;        /* Nuts, 4.9:1 on Deep Blue */
+  --os-text: #f4eee5;        /* Latte, 9.0:1 */
+  --os-muted: #d3ad80;       /* Nuts, 4.9:1; Terracota is 1.9:1 here and unusable */
   --os-soft: #f4eee5;
-  --os-accent: #d3ad80;
-  --os-accent-soft: #ab501b; /* Latte on Terracota is 4.7:1 */
+  --os-accent: #f4eee5;      /* Filled controls reverse: Latte field, Deep Blue type */
+  --os-accent-soft: #ab501b;
   --os-caramel: #d3ad80;
   --os-caramel-soft: #ab501b;
   --os-danger: #d3ad80;
   --os-danger-fill: #ab501b;
-  --os-on-fill: #301607;     /* Bean on Nuts, 8.1:1 — Latte would be 1.8:1 */
+  --os-on-fill: #073c8c;     /* Deep Blue on Latte, 9.0:1 */
   --os-on-danger: #f4eee5;
   --os-on-caramel: #f4eee5;  /* Latte on Terracota, 4.7:1 */
   --os-shadow: none;
