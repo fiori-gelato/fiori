@@ -54,7 +54,7 @@ export default function SalesTargets() {
           >
             <Parallax
               src={photo("gelato-pop")}
-              alt="A chocolate-dipped Batch. gelato pop"
+              alt="A chocolate-dipped Fiori gelato pop"
               speed={0.06}
               loading="lazy"
             />

@@ -143,7 +143,7 @@ export default function Shell() {
       <aside className={`os-side${menuOpen ? " is-open" : ""}`}>
         <div className="os-brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={asset("/assets/batch-logo-black.png")} alt="Batch." />
+          <img src={asset("/brand/logo/fiori-wordmark-deepblue.svg")} alt="Fiori Gelato" />
           <span>OS</span>
         </div>
         {NAV.map((n) => (

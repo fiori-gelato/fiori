@@ -9,7 +9,7 @@ export const CONTACT = {
   whatsappHref:
     "https://wa.me/27835892747?text=" +
     encodeURIComponent(
-      "Hi! I saw the Batch. investor information pack and I'm interested in investing."
+      "Hi! I saw the Fiori investor information pack and I'm interested in investing."
     ),
   email: "hello@batchgelato.com",
   place: "Cape Town, South Africa",
@@ -203,7 +203,7 @@ export const channels = [
     role: "Visibility",
     tone: "volume",
     title: "Retail stockists",
-    body: "Coffee shops, restaurants, takeaways and bakeries that stock BATCH. tubs in their own freezers. Lower margin but steady volume and valuable brand visibility. A small branded freezer is provided to each stockist.",
+    body: "Coffee shops, restaurants, takeaways and bakeries that stock Fiori tubs in their own freezers. Lower margin but steady volume and valuable brand visibility. A small branded freezer is provided to each stockist.",
   },
   {
     role: "Brand",

@@ -1,7 +1,7 @@
-# Batch. — Investor overview
+# Fiori — Investor overview
 
-Single-page investor site for **Batch. Gelato** (Cape Town, July 2026), built
-with Next.js, TypeScript, Tailwind CSS and Framer Motion, using the Batch.
+Single-page investor site for **Fiori Gelato** (Cape Town, July 2026), built
+with Next.js, TypeScript, Tailwind CSS and Framer Motion, using the Fiori
 design system (cream / oat / caramel / pistachio / licorice, Baloo 2 + Inter).
 
 Content follows the July 2026 (rev 1) investor deck: the R320,000 Phase 1 ask,

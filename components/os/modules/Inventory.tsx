@@ -76,7 +76,7 @@ export default function Inventory() {
 
   function exportStock() {
     download(
-      `batch-inventory-${today()}.csv`,
+      `fiori-inventory-${today()}.csv`,
       toCSV([
         ["Item", "Category", "Unit", "Unit cost", "Stock", "Value", "Reorder at", "Supplier"],
         ...items.map((i) => [

@@ -52,7 +52,7 @@ export default function Sales() {
 
   function exportSales() {
     download(
-      `batch-sales-${today()}.csv`,
+      `fiori-sales-${today()}.csv`,
       toCSV([
         ["Date", "Channel", "Customer", "Product", "Qty", "Unit price", "Unit cost", "Revenue", "Gross profit", "Payment"],
         ...rows.flatMap((s) =>

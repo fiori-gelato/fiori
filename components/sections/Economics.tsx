@@ -80,7 +80,7 @@ export default function Economics() {
               <strong>Channel pricing:</strong> on Uber Eats the tub is listed
               higher to absorb the platform&rsquo;s commission, so the amount
               received remains R190. Stockists buy at a wholesale price of
-              around R125 — a 46% margin to BATCH. — which leaves them room to
+              around R125 — a 46% margin to Fiori — which leaves them room to
               retail at a healthy margin of their own.
             </p>
             <p className="econ-note">

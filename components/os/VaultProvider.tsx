@@ -336,7 +336,7 @@ export default function VaultProvider({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `batch-os-backup-${stamp}.json`;
+    a.download = `fiori-os-backup-${stamp}.json`;
     a.click();
     URL.revokeObjectURL(url);
     update((d) => {
@@ -368,7 +368,7 @@ export default function VaultProvider({
       try {
         parsed = JSON.parse(json);
       } catch {
-        throw new Error("That file isn't a Batch OS backup.");
+        throw new Error("That file isn't a Fiori OS backup.");
       }
       const maybeSealed = parsed as Sealed;
       let data: Vault | null = null;
@@ -385,7 +385,7 @@ export default function VaultProvider({
         salt = randomSalt();
         key = await deriveKey(passphrase, salt);
       } else {
-        throw new Error("That file isn't a Batch OS backup.");
+        throw new Error("That file isn't a Fiori OS backup.");
       }
 
       const merged: Vault = { ...seedVault(), ...data };

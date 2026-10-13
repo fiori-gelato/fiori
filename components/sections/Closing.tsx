@@ -15,8 +15,8 @@ export default function Closing() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className="mark reveal"
-          src={asset("/assets/batch-logo-cream.png")}
-          alt="Batch. Gelato"
+          src={asset("/brand/logo/fiori-complete-latte.png")}
+          alt="Fiori Gelato"
         />
         <h2 className="reveal" style={{ "--d": "120ms" } as CSSProperties}>
           A low-overhead way to establish a premium gelato brand in a market

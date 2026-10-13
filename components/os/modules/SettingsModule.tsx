@@ -323,7 +323,7 @@ export default function SettingsModule() {
             Stay unlocked on this device
             <span className="os-small os-muted">
               {" "}
-              — Batch OS opens straight to the dashboard here. Your data stays
+              — Fiori OS opens straight to the dashboard here. Your data stays
               encrypted and other devices still need the passphrase once.
             </span>
           </span>
@@ -388,7 +388,7 @@ function PausedNote() {
         3. Come back here and press <strong>Sync now</strong>
       </p>
       <p className="os-small os-muted">
-        Restoring keeps the data that was there. Opening Batch OS counts as use,
+        Restoring keeps the data that was there. Opening Fiori OS counts as use,
         so a project in weekly use does not pause.
       </p>
       <div className="os-flex">
@@ -415,7 +415,7 @@ function PausedNote() {
 }
 
 /**
- * Putting Batch OS on a phone's home screen.
+ * Putting Fiori OS on a phone's home screen.
  *
  * iOS only offers this from Safari's share sheet and gives a page no way to
  * ask for it, so the steps have to be written out. Android and desktop Chrome
@@ -451,7 +451,7 @@ function InstallCard() {
       ) : (
         <>
           <p className="os-small os-muted">
-            Batch OS installs straight from the web — its own icon, full screen,
+            Fiori OS installs straight from the web — its own icon, full screen,
             no browser bar, and it opens with no signal. There is nothing to
             download from the App Store.
           </p>
@@ -468,7 +468,7 @@ function InstallCard() {
                 setPrompt(null);
               }}
             >
-              <Smartphone size={15} /> Install Batch OS
+              <Smartphone size={15} /> Install Fiori OS
             </button>
           ) : (
             <ol className="os-steps os-small">
@@ -484,7 +484,7 @@ function InstallCard() {
                 <strong>Add</strong>.
               </li>
               <li>
-                Open the new <strong>Batch.</strong> icon, set your passphrase,
+                Open the new <strong>Fiori</strong> icon, set your passphrase,
                 then sign in under Sync to pull everything down.
               </li>
             </ol>

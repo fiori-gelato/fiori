@@ -6,7 +6,7 @@ import { asset } from "@/lib/site";
 export const LOADED_EVENT = "batch:loaded";
 
 /**
- * Intro overlay: the Batch. mark rises in on licorice, then the overlay
+ * Intro overlay: the Fiori mark rises in on licorice, then the overlay
  * fades to reveal the hero. Adds `is-loaded` to <body>, which drives the
  * staged hero entrance and the slow background zoom.
  */
@@ -44,7 +44,7 @@ export default function Intro() {
   return (
     <div className={`intro${done ? " is-done" : ""}`} aria-hidden="true">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={asset("/assets/batch-logo-cream.png")} alt="" />
+      <img src={asset("/brand/logo/fiori-complete-latte.png")} alt="" />
     </div>
   );
 }

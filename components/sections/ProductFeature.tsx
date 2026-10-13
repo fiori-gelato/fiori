@@ -16,7 +16,7 @@ export default function ProductFeature() {
         <div className="photo photo--wipe reveal">
           <Parallax
             src={photo("cup-cone-pair")}
-            alt="Batch. gelato served in a cup and a cone"
+            alt="Fiori gelato served in a cup and a cone"
             speed={0.08}
           />
         </div>

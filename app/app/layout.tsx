@@ -1,15 +1,15 @@
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
-  title: "Batch OS",
-  description: "Operating system for Batch. Gelato.",
+  title: "Fiori OS",
+  description: "Operating system for Fiori Gelato.",
   /* Private tool — keep it out of search results. */
   robots: { index: false, follow: false },
   manifest: "/batch/app.webmanifest",
   /* iOS ignores the manifest's icons and looks for this one. */
   appleWebApp: {
     capable: true,
-    title: "Batch OS",
+    title: "Fiori OS",
     statusBarStyle: "default",
   },
   icons: {

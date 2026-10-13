@@ -1,43 +1,57 @@
 /* =========================================================
-   Batch OS — built on the Batch. design tokens, with a dark
+   Fiori OS — built on the Fiori Gelato tokens, with a Bean
    theme for evening production work.
+
+   Flat fields and hairline rules do the separating; the
+   identity carries no shadows, gradients or tints. Deep Blue
+   and Bean are never put on each other, so the dark theme
+   drops Deep Blue and lets Nuts carry the accent.
    ========================================================= */
 
 :root {
-  --os-bg: #F2EFE7;
-  --os-surface: #FBFAF6;
-  --os-surface-2: #E8E2D5;
-  --os-line: #E3DCCE;
-  --os-text: #1E1E1E;
-  --os-muted: #8A8578;
-  --os-soft: #3A362E;
-  --os-accent: #7E9068;
-  --os-accent-soft: #C9D2BB;
-  --os-caramel: #A9855A;
-  --os-caramel-soft: #EADFCB;
-  --os-danger: #B4553F;
-  --os-radius: 14px;
-  --os-radius-lg: 20px;
-  --os-shadow: 0 2px 8px rgba(58, 54, 46, 0.07);
-  --os-shadow-lg: 0 18px 48px rgba(58, 54, 46, 0.14);
+  --os-bg: #f4eee5;          /* Latte */
+  --os-surface: #ffffff;
+  --os-surface-2: #f4eee5;
+  --os-line: #d3ad80;        /* Nuts hairline */
+  --os-text: #073c8c;        /* Deep Blue, 10.3:1 on white */
+  --os-muted: #ab501b;       /* Terracota, 5.4:1 on white — never below 12px */
+  --os-soft: #301607;        /* Bean */
+  --os-accent: #073c8c;
+  --os-accent-soft: #d3ad80; /* Deep Blue on Nuts is 4.9:1 */
+  --os-caramel: #ab501b;
+  --os-caramel-soft: #d3ad80;
+  --os-danger: #ab501b;      /* No red in the palette; Terracota carries attention */
+  --os-danger-fill: #ab501b;
+  --os-on-fill: #f4eee5;     /* Latte on Deep Blue, 9.0:1 */
+  --os-on-danger: #f4eee5;   /* Latte on Terracota, 4.7:1 */
+  --os-on-caramel: #073c8c;  /* Deep Blue on Nuts, 4.9:1 */
+  --os-radius: 0px;
+  --os-radius-lg: 0px;
+  --os-radius-sm: 4px;
+  --os-shadow: none;
+  --os-shadow-lg: none;
   --os-sidebar: 236px;
 }
 
 [data-os-theme="dark"] {
-  --os-bg: #171613;
-  --os-surface: #1F1E1A;
-  --os-surface-2: #262420;
-  --os-line: #33302A;
-  --os-text: #F2EFE7;
-  --os-muted: #948E80;
-  --os-soft: #D8D3C6;
-  --os-accent: #A3B18A;
-  --os-accent-soft: #3A4433;
-  --os-caramel: #C8A77A;
-  --os-caramel-soft: #40362A;
-  --os-danger: #D9765C;
-  --os-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --os-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.45);
+  --os-bg: #301607;          /* Bean */
+  --os-surface: #301607;
+  --os-surface-2: #3f2010;
+  --os-line: #d3ad80;        /* 8.1:1 on Bean — the hairline does the work */
+  --os-text: #f4eee5;        /* Latte, 14.6:1 on Bean */
+  --os-muted: #d3ad80;       /* Nuts, 8.1:1; Terracota cannot be read on Bean */
+  --os-soft: #f4eee5;
+  --os-accent: #d3ad80;
+  --os-accent-soft: #ab501b; /* Latte on Terracota is 4.7:1 */
+  --os-caramel: #d3ad80;
+  --os-caramel-soft: #ab501b;
+  --os-danger: #d3ad80;
+  --os-danger-fill: #ab501b;
+  --os-on-fill: #301607;     /* Bean on Nuts, 8.1:1 — Latte would be 1.8:1 */
+  --os-on-danger: #f4eee5;
+  --os-on-caramel: #f4eee5;  /* Latte on Terracota, 4.7:1 */
+  --os-shadow: none;
+  --os-shadow-lg: none;
 }
 
 .os,
@@ -51,14 +65,14 @@
   min-height: 100svh;
   background: var(--os-bg);
   color: var(--os-text);
-  font-family: var(--font-text, Inter, system-ui, sans-serif);
+  font-family: var(--font-text, 'Stack Sans Text', system-ui, sans-serif);
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
 .os h1, .os h2, .os h3, .os h4 {
-  font-family: var(--font-display, "Baloo 2", system-ui, sans-serif);
+  font-family: var(--font-display, 'Stack Sans Text', system-ui, sans-serif);
   font-weight: 700;
   margin: 0;
   line-height: 1.15;
@@ -80,7 +94,7 @@
   place-items: center;
   padding: calc(24px + env(safe-area-inset-top)) 24px
            calc(24px + env(safe-area-inset-bottom));
-  background: #1E1E1E;
+  background: #073c8c;   /* Deep Blue leads: it is the ground behind the logo */
 }
 .os-lock-card {
   width: min(420px, 100%);
@@ -132,14 +146,14 @@
 
 .os-nav-item {
   display: flex; align-items: center; gap: 11px;
-  padding: 9px 11px; border-radius: 10px;
+  padding: 9px 11px; border-radius: var(--os-radius-sm);
   background: none; border: 0; width: 100%; text-align: left;
   color: var(--os-soft); font-size: 14px; font-weight: 500; cursor: pointer;
   transition: background-color 140ms ease, color 140ms ease;
 }
 .os-nav-item:hover { background: var(--os-surface-2); color: var(--os-text); }
 .os-nav-item[aria-current="true"] {
-  background: var(--os-accent-soft); color: var(--os-text); font-weight: 600;
+  background: var(--os-accent); color: var(--os-on-fill); font-weight: 600;
 }
 .os-nav-item svg { width: 17px; height: 17px; flex: none; }
 .os-nav-sep { height: 1px; background: var(--os-line); margin: 10px 8px; }
@@ -205,11 +219,11 @@
 
 .os-stat { animation: osRise 420ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 .os-stat-label {
-  font-size: 10.5px; font-weight: 600; letter-spacing: .14em;
+  font-size: 12px; font-weight: 600; letter-spacing: .12em;
   text-transform: uppercase; color: var(--os-muted);
 }
 .os-stat-value {
-  font-family: var(--font-display, "Baloo 2", sans-serif); font-weight: 800;
+  font-family: var(--font-display, 'Stack Sans Text', system-ui, sans-serif); font-weight: 800;
   font-size: clamp(24px, 2.6vw, 31px); line-height: 1.1; margin-top: 7px;
   letter-spacing: -0.01em;
 }
@@ -228,9 +242,9 @@
 /* Buttons */
 .os-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 9px 16px; border-radius: 999px; border: 1px solid transparent;
+  padding: 9px 16px; border-radius: var(--os-radius-sm); border: 1px solid transparent;
   font-size: 13.5px; font-weight: 600; cursor: pointer;
-  background: var(--os-text); color: var(--os-bg);
+  background: var(--os-accent); color: var(--os-on-fill);
   transition: transform 120ms ease, opacity 140ms ease, background-color 140ms ease;
 }
 .os-btn:hover { opacity: .88; }
@@ -238,19 +252,19 @@
 .os-btn svg { width: 15px; height: 15px; }
 .os-btn--ghost { background: transparent; color: var(--os-text); border-color: var(--os-line); }
 .os-btn--ghost:hover { background: var(--os-surface-2); opacity: 1; }
-.os-btn--accent { background: var(--os-accent); color: #fff; }
-.os-btn--danger { background: transparent; color: var(--os-danger); border-color: var(--os-danger); }
+.os-btn--accent { background: var(--os-accent); color: var(--os-on-fill); }
+.os-btn--danger { background: var(--os-danger-fill); color: var(--os-on-danger); border-color: var(--os-danger-fill); }
 .os-btn--sm { padding: 6px 12px; font-size: 12.5px; }
 .os-btn:disabled { opacity: .45; cursor: not-allowed; }
 
 /* Forms */
 .os-field { display: block; margin-bottom: 13px; }
 .os-field > span {
-  display: block; font-size: 11px; font-weight: 600; letter-spacing: .1em;
+  display: block; font-size: 12px; font-weight: 600; letter-spacing: .1em;
   text-transform: uppercase; color: var(--os-muted); margin-bottom: 6px;
 }
 .os-input, .os-select, .os-textarea {
-  width: 100%; padding: 9px 12px; border-radius: 10px;
+  width: 100%; padding: 9px 12px; border-radius: var(--os-radius-sm);
   border: 1px solid var(--os-line); background: var(--os-bg); color: var(--os-text);
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
@@ -280,12 +294,12 @@
 /* Chips + badges */
 .os-chip {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+  padding: 3px 10px; border-radius: var(--os-radius-sm); font-size: 11.5px; font-weight: 600;
   background: var(--os-surface-2); color: var(--os-soft); white-space: nowrap;
 }
-.os-chip--accent { background: var(--os-accent-soft); color: var(--os-accent); }
-.os-chip--caramel { background: var(--os-caramel-soft); color: var(--os-caramel); }
-.os-chip--danger { background: color-mix(in srgb, var(--os-danger) 16%, transparent); color: var(--os-danger); }
+.os-chip--accent { background: var(--os-accent); color: var(--os-on-fill); }
+.os-chip--caramel { background: var(--os-caramel-soft); color: var(--os-on-caramel); }
+.os-chip--danger { background: var(--os-danger-fill); color: var(--os-on-danger); }
 
 /* Modal */
 .os-modal-scrim {
@@ -312,9 +326,9 @@
 /* Charts */
 .os-bars { display: grid; gap: 9px; }
 .os-bar-row { display: grid; grid-template-columns: minmax(96px, 148px) 1fr auto; gap: 12px; align-items: center; font-size: 13px; }
-.os-bar-track { height: 9px; border-radius: 999px; background: var(--os-surface-2); overflow: hidden; }
+.os-bar-track { height: 9px; border-radius: var(--os-radius-sm); background: var(--os-surface-2); overflow: hidden; }
 .os-bar-fill {
-  display: block; height: 100%; border-radius: 999px; background: var(--os-accent);
+  display: block; height: 100%; border-radius: var(--os-radius-sm); background: var(--os-accent);
   transform-origin: 0 50%; animation: osGrow 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes osGrow { from { transform: scaleX(0) } to { transform: scaleX(1) } }
@@ -332,7 +346,7 @@
 .os-list { display: grid; gap: 8px; }
 .os-list-row {
   display: flex; align-items: center; gap: 12px;
-  padding: 11px 14px; border-radius: 11px; background: var(--os-surface);
+  padding: 11px 14px; border-radius: var(--os-radius-sm); background: var(--os-surface);
   border: 1px solid var(--os-line); font-size: 13.5px;
   transition: transform 140ms ease, box-shadow 140ms ease;
 }
@@ -349,7 +363,7 @@
 /* Global search */
 .os-search {
   flex: 0 1 300px; display: flex; align-items: center; gap: 8px;
-  padding: 7px 12px; border-radius: 999px;
+  padding: 7px 12px; border-radius: var(--os-radius-sm);
   background: var(--os-surface); border: 1px solid var(--os-line);
 }
 .os-search input { border: 0; background: none; outline: none; width: 100%; font-size: 13.5px; }
@@ -359,7 +373,7 @@
 .os-results { display: grid; gap: 6px; max-height: 60svh; overflow-y: auto; }
 .os-result {
   display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
-  padding: 10px 12px; border-radius: 10px; border: 1px solid var(--os-line);
+  padding: 10px 12px; border-radius: var(--os-radius-sm); border: 1px solid var(--os-line);
   background: var(--os-bg); cursor: pointer; font-size: 13.5px;
 }
 .os-result:hover { background: var(--os-surface-2); }
@@ -367,22 +381,22 @@
 /* Stage pips */
 .os-stages { display: flex; gap: 5px; flex-wrap: wrap; }
 .os-stage-pip {
-  padding: 4px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+  padding: 4px 11px; border-radius: var(--os-radius-sm); font-size: 11.5px; font-weight: 600;
   border: 1px solid var(--os-line); background: transparent; cursor: pointer;
   color: var(--os-muted); transition: all 140ms ease;
 }
 .os-stage-pip[aria-pressed="true"] {
-  background: var(--os-accent); border-color: var(--os-accent); color: #fff;
+  background: var(--os-accent); border-color: var(--os-accent); color: var(--os-on-fill);
 }
 
 /* Calendar — minmax(0,1fr) so a long title can't stretch its column. */
 .os-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
 .os-cal-head {
-  font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
   color: var(--os-muted); text-align: center; padding-bottom: 4px;
 }
 .os-cal-cell {
-  min-height: 86px; min-width: 0; padding: 6px; border-radius: 9px;
+  min-height: 86px; min-width: 0; padding: 6px; border-radius: var(--os-radius-sm);
   border: 1px solid var(--os-line);
   background: var(--os-surface); display: flex; flex-direction: column; gap: 3px;
   transition: border-color 140ms ease, background-color 140ms ease;
@@ -392,7 +406,7 @@
 .os-cal-cell.is-drop { border-color: var(--os-caramel); border-style: dashed; }
 .os-cal-date { font-size: 11px; font-weight: 600; color: var(--os-muted); }
 .os-cal-item {
-  font-size: 10.5px; padding: 3px 6px; border-radius: 6px; cursor: grab;
+  font-size: 10.5px; padding: 3px 6px; border-radius: var(--os-radius-sm); cursor: grab;
   background: var(--os-surface-2); border-left: 2px solid var(--os-accent);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   max-width: 100%; min-width: 0;
@@ -408,7 +422,7 @@
 
 /* Photos */
 .os-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 9px; }
-.os-photo { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--os-surface-2); }
+.os-photo { position: relative; aspect-ratio: 1; border-radius: var(--os-radius-sm); overflow: hidden; background: var(--os-surface-2); }
 .os-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .os-photo button {
   position: absolute; top: 5px; right: 5px; border: 0; cursor: pointer;
@@ -417,12 +431,12 @@
 }
 .os-photo span {
   position: absolute; left: 5px; bottom: 5px; font-size: 9.5px; font-weight: 600;
-  background: rgba(0,0,0,.6); color: #fff; padding: 2px 7px; border-radius: 999px;
+  background: rgba(0,0,0,.6); color: #fff; padding: 2px 7px; border-radius: var(--os-radius-sm);
 }
 
 .os-locked-note {
   display: flex; align-items: center; gap: 9px; padding: 10px 14px;
-  border-radius: 10px; background: var(--os-caramel-soft); color: var(--os-caramel);
+  border-radius: var(--os-radius-sm); background: var(--os-caramel-soft); color: var(--os-caramel);
   font-size: 12.5px; font-weight: 600;
 }
 
@@ -431,7 +445,7 @@
 .os-steps li::marker { color: var(--os-muted); font-weight: 600 }
 
 .os-field-label {
-  display: block; font-size: 11px; font-weight: 600; letter-spacing: .1em;
+  display: block; font-size: 12px; font-weight: 600; letter-spacing: .1em;
   text-transform: uppercase; color: var(--os-muted); margin-bottom: 6px;
 }
 
@@ -442,7 +456,7 @@
 .os-split strong { color: var(--os-text); font-variant-numeric: tabular-nums }
 
 .os-sql {
-  margin: 0 0 10px; padding: 12px 14px; border-radius: 9px; max-height: 260px;
+  margin: 0 0 10px; padding: 12px 14px; border-radius: var(--os-radius-sm); max-height: 260px;
   overflow: auto; background: var(--os-surface); border: 1px solid var(--os-line);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11.5px; line-height: 1.55; color: var(--os-soft);
@@ -459,7 +473,7 @@
 .os-reveal button:hover { color: var(--os-text) }
 
 .os-note {
-  padding: 12px 15px; border-radius: 11px; background: var(--os-caramel-soft);
+  padding: 12px 15px; border-radius: var(--os-radius-sm); background: var(--os-caramel-soft);
   border: 1px solid color-mix(in srgb, var(--os-caramel) 30%, transparent);
   animation: osRise 320ms cubic-bezier(0.16,1,0.3,1) both;
 }
@@ -468,8 +482,8 @@
 .os-toast {
   position: fixed; left: 50%; transform: translateX(-50%);
   bottom: calc(20px + env(safe-area-inset-bottom));
-  background: var(--os-text); color: var(--os-bg); padding: 11px 20px;
-  border-radius: 999px; font-size: 13.5px; font-weight: 600; z-index: 200;
+  background: var(--os-accent); color: var(--os-on-fill); padding: 11px 20px;
+  border-radius: var(--os-radius-sm); font-size: 13.5px; font-weight: 600; z-index: 200;
   box-shadow: var(--os-shadow-lg); animation: osToast 300ms cubic-bezier(0.16,1,0.3,1) both;
 }
 @keyframes osToast { from { opacity: 0; transform: translate(-50%, 14px) } to { opacity: 1; transform: translate(-50%, 0) } }

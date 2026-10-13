@@ -23,7 +23,7 @@ export default function Vision() {
           <div className="photo photo--wipe vision-photo reveal">
             <Parallax
               src={photo("storefront")}
-              alt="A Batch. gelato and coffee counter"
+              alt="A Fiori gelato and coffee counter"
               speed={0.1}
             />
           </div>

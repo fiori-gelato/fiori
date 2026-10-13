@@ -1,5 +1,5 @@
 /**
- * Batch OS — domain model.
+ * Fiori OS — domain model.
  *
  * One vault object holds every collection. Records reference each other by
  * id so a change in one module flows to the rest without duplicate entry:

@@ -4,14 +4,14 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://mk-cybercode.github.io"),
-  title: "Batch. — Investor information pack",
+  title: "Fiori Gelato — Investor information pack",
   description:
-    "Batch. Gelato — investor information pack, Cape Town, July 2026. Establishing a premium gelato brand at reduced risk, before scaling.",
-  icons: { icon: asset("/assets/batch-logo-black.png") },
+    "Fiori Gelato — investor information pack, Cape Town, July 2026. Establishing a premium gelato brand at reduced risk, before scaling.",
+  icons: { icon: asset("/brand/mark/f-oval-deepblue.svg") },
   openGraph: {
-    title: "Batch. — Investor information pack",
+    title: "Fiori Gelato — Investor information pack",
     description:
-      "Gelato made in small batches. Batch. Gelato — investor information pack, Cape Town, July 2026.",
+      "Gelato made in small batches. Fiori Gelato — investor information pack, Cape Town, July 2026.",
     images: [asset("/assets/salt-caramel.webp")],
   },
 };
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#1E1E1E",
+  themeColor: "#073c8c",
 };
 
 export default function RootLayout({
@@ -28,15 +28,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {/* Both faces are served from this site, so the wordmark's companions
+            are never substituted while a third party is reached for. */}
         <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
+          rel="preload"
+          as="font"
+          type="font/woff2"
+          href={asset("/brand/fonts/StackSansText.woff2")}
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
+          rel="preload"
+          as="font"
+          type="font/woff2"
+          href={asset("/brand/fonts/InstrumentSerif-Italic.woff2")}
+          crossOrigin="anonymous"
         />
       </head>
       <body>{children}</body>

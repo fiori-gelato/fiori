@@ -44,7 +44,7 @@ export default function Finance() {
 
   function exportLedger() {
     download(
-      `batch-expenses-${today()}.csv`,
+      `fiori-expenses-${today()}.csv`,
       toCSV([
         [
           "Date",

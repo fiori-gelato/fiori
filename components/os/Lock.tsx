@@ -65,7 +65,7 @@ export default function Lock() {
     <div className="os-lock">
       <div className={`os-lock-card${error ? " os-shake" : ""}`} key={error}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={asset("/assets/batch-logo-black.png")} alt="Batch." />
+        <img src={asset("/brand/logo/fiori-complete-deepblue.svg")} alt="Fiori Gelato" />
         <h1>
           {setup
             ? restoring
@@ -77,7 +77,7 @@ export default function Lock() {
           {setup
             ? restoring
               ? "Choose the backup file exported from your other device, then enter the passphrase you use there."
-              : "This encrypts everything in the app on this device. There is no reset — write it down somewhere safe. Already using Batch on another device? Type that same passphrase here, then sign in under Settings → Sync and your work will come down."
+              : "This encrypts everything in the app on this device. There is no reset — write it down somewhere safe. Already using Fiori on another device? Type that same passphrase here, then sign in under Settings → Sync and your work will come down."
             : "Enter your passphrase to unlock the business."}
         </p>
 

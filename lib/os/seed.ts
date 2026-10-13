@@ -108,7 +108,7 @@ export function seedVault(): Vault {
   return {
     version: 1,
     settings: {
-      businessName: "BATCH. Gelato",
+      businessName: "Fiori Gelato",
       loanCapital: 320000,
       wastePct: 8,
       theme: "system",

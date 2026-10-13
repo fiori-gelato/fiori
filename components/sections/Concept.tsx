@@ -7,7 +7,7 @@ const cards = [
   {
     num: "01",
     title: "What it is",
-    body: "BATCH. intends to produce gelato in small batches and sell it directly to the public and to retailers. The recipes, machinery and flavour bases are sourced from Italy through a single South African supplier, which also provides equipment training and access to a consulting chef for recipe development.",
+    body: "Fiori intends to produce gelato in small batches and sell it directly to the public and to retailers. The recipes, machinery and flavour bases are sourced from Italy through a single South African supplier, which also provides equipment training and access to a consulting chef for recipe development.",
   },
   {
     num: "02",
@@ -58,7 +58,7 @@ export default function Concept() {
         <div className="photo photo--wipe band-photo band-photo--narrow reveal">
           <Parallax
             src={photo("tubs-shared")}
-            alt="Batch. gelato tubs and flavours"
+            alt="Fiori gelato tubs and flavours"
             speed={0.08}
             loading="lazy"
           />

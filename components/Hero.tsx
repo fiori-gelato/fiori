@@ -39,13 +39,14 @@ export default function Hero() {
       <div className="hero-scrim" aria-hidden="true"></div>
       <motion.div className="hero-content" style={{ y, opacity }}>
         <span className="overline" data-stage="1">
-          Gelato made in small batches
+          Made in small batches
+          <em className="accent">shared in good company.</em>
         </span>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className="hero-mark"
-          src={asset("/assets/batch-logo-cream.png")}
-          alt="Batch. Gelato"
+          src={asset("/brand/logo/fiori-complete-latte.png")}
+          alt="Fiori Gelato"
           data-stage="2"
         />
         <p className="hero-line" data-stage="3">

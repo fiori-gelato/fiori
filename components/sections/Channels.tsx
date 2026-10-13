@@ -59,7 +59,7 @@ export default function Channels() {
         <div className="photo photo--wipe band-photo reveal">
           <Parallax
             src={photo("packaging-range")}
-            alt="Batch. tub packaging across the flavour range"
+            alt="Fiori tub packaging across the flavour range"
             speed={0.08}
             loading="lazy"
           />
