@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { asset } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Fiori OS",
   description: "Operating system for Fiori Gelato.",
   /* Private tool — keep it out of search results. */
   robots: { index: false, follow: false },
-  manifest: "/batch/app.webmanifest",
+  manifest: asset("/app.webmanifest"),
   /* iOS ignores the manifest's icons and looks for this one. */
   appleWebApp: {
     capable: true,
@@ -13,8 +14,8 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
   icons: {
-    icon: "/batch/assets/icon-192.png",
-    apple: "/batch/assets/icon-apple-180.png",
+    icon: asset("/assets/icon-192.png"),
+    apple: asset("/assets/icon-apple-180.png"),
   },
   other: {
     /* Next emits only the modern spelling. Versions of iOS before 16.4 read

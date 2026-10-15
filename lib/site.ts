@@ -1,6 +1,14 @@
-/** Base path helper — keeps plain <img>/<a> URLs correct under the
- *  /batch base path used on GitHub Pages. */
-export const BASE = "/batch";
+/**
+ * Base path helper — keeps plain <img>/<a> URLs correct wherever the site is
+ * served from. Empty at the root of a domain; "/fiori" under a folder on
+ * github.io. It has to match `basePath` in next.config.ts, and both read the
+ * same variable so there is only one place to set it.
+ */
+export const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+/** Where the site is published, for canonical and share-card URLs. */
+export const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://mk-cybercode.github.io";
 export const asset = (path: string) => `${BASE}${path}`;
 
 export const CONTACT = {

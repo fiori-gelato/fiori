@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { asset } from "@/lib/site";
 import VaultProvider, { useVault } from "@/components/os/VaultProvider";
 import Lock from "@/components/os/Lock";
 import Shell from "@/components/os/Shell";
@@ -39,7 +40,7 @@ export default function AppPage() {
     if (!("serviceWorker" in navigator)) return;
     const onLoad = () =>
       navigator.serviceWorker
-        .register("/batch/sw.js", { scope: "/batch/app/" })
+        .register(asset("/sw.js"), { scope: asset("/app/") })
         .catch(() => {
           /* Blocked, private window, or unsupported — the app still runs. */
         });

@@ -4,31 +4,6 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 
-/* =========================================================
-   Fiori Gelato — the brand's own faces, self-hosted so the
-   wordmark's companions are never substituted.
-   ========================================================= */
-@font-face {
-  font-family: 'Stack Sans Text';
-  src: url('/batch/brand/fonts/StackSansText.woff2') format('woff2-variations');
-  font-weight: 200 700;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Instrument Serif';
-  src: url('/batch/brand/fonts/InstrumentSerif-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Instrument Serif';
-  src: url('/batch/brand/fonts/InstrumentSerif-Italic.woff2') format('woff2');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
 
 @theme {
   --color-deep-blue: #073c8c;
@@ -369,7 +344,7 @@ section { position: relative; }
 .concept-card .swatch {
   position: absolute; top: -18px; right: -16px;
   width: 92px; height: 92px;
-  background: url('/batch/brand/mark/f-deepblue.svg') no-repeat center / contain;
+  background: var(--mark-f) no-repeat center / contain;
   opacity: 0.08;
   pointer-events: none;
 }
