@@ -109,10 +109,14 @@ body.enter .hero > *{animation:rise 1.8s cubic-bezier(.2,.8,.2,1) backwards;anim
 .col p,.col a{margin:0;font:400 14px/20px var(--font-sans)}
 .col a{text-decoration:underline;text-underline-offset:3px}
 .col.wide{grid-column:1 / -1}
+.col a.ig{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;text-decoration:none;min-height:32px}
+.col a.ig img{width:22px;height:22px}
+@media (hover:hover){.col a.ig:hover{text-decoration:underline;text-underline-offset:3px}}
 .foot .btn{width:100%;margin-top:var(--space-2)}
 .foot .btn-latte{background:var(--bean);color:var(--latte)}
 @media (hover:hover){.foot .btn-latte:hover{background:var(--deep-blue);color:var(--latte)}}
-.foot-line{max-width:560px;margin:var(--space-5) auto 0;padding-top:var(--space-3);border-top:1px solid rgba(48,22,7,.35)}
+.foot-line{max-width:560px;margin:var(--space-5) auto 0;padding-top:var(--space-4);border-top:1px solid rgba(48,22,7,.35)}
+.foot-line .web{margin-top:var(--space-2)}
 
 /* ---------- notify sheet ---------- */
 .scrim{position:fixed;inset:0;z-index:40;background:rgba(48,22,7,.6);display:flex;align-items:flex-end;justify-content:center}
@@ -170,15 +174,17 @@ body.enter .hero > *{animation:rise 1.8s cubic-bezier(.2,.8,.2,1) backwards;anim
   <div class="wrap">
     <div class="cols">
       <div class="col wide">
-        <span class="h">follow us on our journey</span>
-        <a href="https://www.instagram.com/fiori_gelatoZA/" target="_blank" rel="noopener">Instagram</a>
-      </div>
-      <div class="col wide">
-        <span class="h">be first in line</span>
+        <span class="h">Be first in line.</span>
         <a class="btn btn-latte" href="#notify" data-notify style="text-decoration:none">Tell me when you're serving</a>
       </div>
     </div>
-    <div class="foot-line"><span class="label">fiori-gelato.co.za</span></div>
+    <div class="foot-line">
+      <div class="col">
+        <span class="h">Follow us on our journey.</span>
+        <a class="ig" href="https://www.instagram.com/fiori_gelatoZA/" target="_blank" rel="noopener"><img src="assets/instagram.png" alt="" width="22" height="22">@fiori_gelatoZA</a>
+        <span class="label web">fiori-gelato.co.za</span>
+      </div>
+    </div>
   </div>
   <img class="foot-protea" src="assets/protea-latte.svg" alt="">
 </footer>
