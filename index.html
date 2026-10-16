@@ -7,10 +7,17 @@
 <meta name="description" content="Small-batch gelato, churned by hand in Cape Town. Coming soon.">
 <meta property="og:title" content="Fiori Gelato · Coming soon">
 <meta property="og:description" content="Small-batch gelato, churned by hand in Cape Town.">
-<meta property="og:image" content="https://fiori-gelato.co.za/assets/logo-terracota.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://fiori-gelato.co.za/">
+<meta property="og:image" content="https://fiori-gelato.co.za/assets/og-blue.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="860">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#ffffff">
-<link rel="icon" type="image/png" href="assets/logo-terracota.png">
-<link rel="preload" href="assets/logo-terracota.png" as="image">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <style>
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
@@ -246,7 +253,7 @@ body.enter .hero > *{animation:rise 1.8s cubic-bezier(.2,.8,.2,1) backwards;anim
         return;
       }
       // freeze the pulse where it is, then fly the logo onto the header logo
-      var from = getComputedStyle(logo).transform;
+      var from = getComputedStyle(logo).transform, fromOp = getComputedStyle(logo).opacity || "1";
       if (!from || from === "none") from = "matrix(1,0,0,1,0,0)";
       logo.style.animation = "none";
       logo.style.transform = from;
@@ -259,8 +266,8 @@ body.enter .hero > *{animation:rise 1.8s cubic-bezier(.2,.8,.2,1) backwards;anim
       topLogo.style.visibility = "hidden";
       intro.classList.add("leave");
       var anim = logo.animate([
-        {transform: from},
-        {transform: "translate(" + dx + "px," + dy + "px) scale(" + (scale * base) + ")"}
+        {transform: from, opacity: fromOp},
+        {transform: "translate(" + dx + "px," + dy + "px) scale(" + (scale * base) + ")", opacity: 1}
       ], {duration: 1700, easing: "cubic-bezier(.65,0,.3,1)", fill: "forwards"});
       function done(){ topLogo.style.visibility = ""; intro.remove(); }
       anim.onfinish = done;
