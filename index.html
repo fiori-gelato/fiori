@@ -17,9 +17,9 @@ body{margin:0}
 [hidden]{display:none!important}
 </style>
 <style>
-/* Layout: mobile-first, white page. A pulsing logo fades away to the blue logo bleeding past the edges,
-   a big COMING SOON line sliding past, the slogan, then one compact terracota block with the
-   write-up and the sign-up button. Deep Blue type, Terracota for accents. */
+/* Layout: mobile-first, white page, everything centred and short. The blue logo large up top,
+   COMING SOON drifting along a gentle wave with the Fiori stamp between, a few lines about us, then a terracota
+   footer with two small columns and the sign-up button. Deep Blue type, Terracota for accents. */
 @font-face{font-family:"Stack Sans Text";src:url("fonts/StackSansText-VariableFont_wght.ttf") format("truetype");font-weight:100 900;font-style:normal;font-display:block}
 @font-face{font-family:"Instrument Serif";src:url("fonts/InstrumentSerif-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:block}
 @font-face{font-family:"Instrument Serif";src:url("fonts/InstrumentSerif-Italic.ttf") format("truetype");font-weight:400;font-style:italic;font-display:block}
@@ -65,55 +65,54 @@ a{color:inherit}
 @media (hover:hover){.btn-latte:hover{background:var(--deep-blue);color:var(--latte)}.btn-blue:hover{background:var(--terracota)}}
 
 /* ---------- opening screen: terracota logo pulsing on white ---------- */
-.intro{position:fixed;inset:0;z-index:100;background:var(--white);display:grid;place-items:center;cursor:pointer;animation:introFailsafe 1.6s ease 7s forwards}
-.intro img{width:min(62vw,300px);height:auto;animation:pulse 1.8s ease-in-out infinite}
+.intro{position:fixed;inset:0;z-index:100;background-color:var(--white);display:grid;place-items:center;cursor:pointer;animation:introFailsafe 1.6s ease 7s forwards}
+.intro img{width:min(62vw,300px);height:auto;animation:pulse 1.8s ease-in-out infinite;transform-origin:50% 50%;will-change:transform}
 @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:.75}}
-.intro.leave{opacity:0;visibility:visible;transition:opacity 2.8s cubic-bezier(.45,0,.25,1);pointer-events:none}
+.intro.leave{background-color:rgba(255,255,255,0);transition:background-color 1.8s ease .3s;pointer-events:none}
 @keyframes introFailsafe{to{opacity:0;visibility:hidden}}
 
 /* page settles in as the opening screen clears */
-body.enter .hero > *{animation:rise 2s cubic-bezier(.2,.8,.2,1) backwards}
-body.enter .hero > *:nth-child(2){animation-delay:.8s}
-body.enter .hero > *:nth-child(3){animation-delay:1.05s}
-body.enter .hero > *:nth-child(4){animation-delay:1.3s}
+body.enter .hero > *{animation:rise 1.8s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:.9s}
 @keyframes rise{from{opacity:0;transform:translateY(28px)}}
 
-/* ---------- top bar ---------- */
-.topbar{display:flex;justify-content:space-between;align-items:center;gap:8px 16px;padding-block:14px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
-.topbar a{text-decoration:none;color:var(--terracota)}
+/* ---------- header: the logo, large and centred ---------- */
+.top{display:flex;justify-content:center;padding-block:28px 0}
+.top img{width:min(78vw,440px);height:auto}
 
-/* ---------- hero: logo bleeding just past the edges, a big COMING SOON line sliding past ---------- */
-.hero{padding-block:var(--space-4) var(--space-5);overflow:hidden}
-.hero-logo-wrap{display:flex;justify-content:center;margin-inline:-4vw}
-.hero-logo{width:108vw;max-width:none;height:auto}
-.soon-run{overflow:hidden;margin-top:var(--space-4);user-select:none;-webkit-user-select:none}
-.soon-track{display:flex;width:max-content;will-change:transform}
-.soon-set{display:flex;align-items:baseline;gap:.35em;padding-right:.35em;white-space:nowrap;font:600 clamp(64px,20vw,200px)/1.05 var(--font-sans);text-transform:uppercase;letter-spacing:-.01em;color:var(--deep-blue)}
-.soon-set .a{font-family:var(--font-serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:0;color:var(--terracota)}
-.slogan{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:var(--space-4) auto 0}
-.slogan .t{font:600 16px/1.3 var(--font-sans);text-transform:uppercase;letter-spacing:.06em}
-.slogan .a{font:italic 400 22px/1.3 var(--font-serif);color:var(--terracota)}
-@media (min-width:860px){
-  .hero{padding-block:var(--space-5) var(--space-6)}
-  .hero-logo-wrap{justify-content:flex-start;padding-left:var(--gutter-l);padding-right:var(--gutter-r);max-width:1180px;margin:0 auto}
-  .hero-logo{width:300px}
-  .slogan .t{font-size:18px}
-  .slogan .a{font-size:26px}
-}
+/* ---------- hero: COMING SOON drifting along a gentle wave, the Fiori stamp between ---------- */
+.hero{padding-block:var(--space-3) var(--space-3);overflow:hidden}
+.wave{display:block;width:100%;height:170px;overflow:visible;user-select:none;-webkit-user-select:none}
+.wave text{font-family:var(--font-sans);font-weight:600;fill:var(--nuts)}
 
-/* ---------- write-up, sign-up and footer in one terracota block ---------- */
-.about{background:var(--terracota);color:var(--latte);padding-block:var(--space-5) calc(var(--space-4) + env(safe-area-inset-bottom,0px))}
-.about-grid{display:grid;grid-template-columns:1fr;gap:var(--space-4)}
-.about-copy{display:flex;flex-direction:column;gap:var(--space-2);min-width:0}
-.about p.body{margin:var(--space-2) 0 0;max-width:56ch}
-.about .btn{width:100%;max-width:420px;align-self:start}
-.foot-line{display:flex;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;padding-top:var(--space-4);margin-top:var(--space-5);border-top:1px solid rgba(244,238,229,.45)}
-.foot-line a{text-decoration:none}
-@media (min-width:860px){
-  .about{padding-top:var(--space-6)}
-  .about-grid{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);align-items:end;gap:var(--space-6)}
-  .about .btn{justify-self:end}
-}
+/* ---------- short write-up ---------- */
+.about{padding-block:var(--space-4) var(--space-6)}
+/* a centred column, text centred too */
+.about-inner{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:480px;margin-inline:auto;text-align:center}
+@media (min-width:760px){.about-inner{max-width:560px}}
+.about .accent{color:var(--terracota)}
+.about p.body{margin:var(--space-3) 0 0;font-size:17px;line-height:26px;display:flex;flex-direction:column;gap:12px}
+.about p.body .ln{display:block;text-wrap:balance}
+
+/* ---------- footer: terracota block, small two-column info ---------- */
+.foot{background:var(--nuts);color:var(--bean);padding-block:var(--space-5) calc(var(--space-4) + env(safe-area-inset-bottom,0px))}
+.foot{position:relative;overflow:hidden}
+.foot > .wrap{position:relative;z-index:1}
+.foot-line{position:relative;z-index:1}
+/* phones: the flower sits under the button, cropped off the bottom-right corner */
+.foot-protea{display:block;width:62vw;max-width:none;height:auto;pointer-events:none;margin:-36px calc(-1 * var(--gutter-r) - 14vw) calc(-1 * var(--space-4) - env(safe-area-inset-bottom,0px) - 22vw) auto}
+/* laptops: it fills the empty right-hand side instead */
+@media (min-width:860px){.foot-protea{position:absolute;z-index:0;margin:0;right:-8%;bottom:-36%;width:440px}}
+.foot :focus-visible{outline-color:var(--bean)}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4) var(--space-3);max-width:560px;margin-inline:auto}
+.col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.col .h{font:italic 400 22px/1.2 var(--font-serif)}
+.col p,.col a{margin:0;font:400 14px/20px var(--font-sans)}
+.col a{text-decoration:underline;text-underline-offset:3px}
+.col.wide{grid-column:1 / -1}
+.foot .btn{width:100%;margin-top:var(--space-2)}
+.foot .btn-latte{background:var(--bean);color:var(--latte)}
+@media (hover:hover){.foot .btn-latte:hover{background:var(--deep-blue);color:var(--latte)}}
+.foot-line{max-width:560px;margin:var(--space-5) auto 0;padding-top:var(--space-3);border-top:1px solid rgba(48,22,7,.35)}
 
 /* ---------- notify sheet ---------- */
 .scrim{position:fixed;inset:0;z-index:40;background:rgba(48,22,7,.6);display:flex;align-items:flex-end;justify-content:center}
@@ -138,7 +137,7 @@ body.enter .hero > *:nth-child(4){animation-delay:1.3s}
 
 @media (prefers-reduced-motion:reduce){
   .intro img{animation:none}
-  .intro.leave{transition:opacity .5s ease}
+  .intro.leave{opacity:0;transition:opacity .5s ease}
   body.enter .hero > *{animation:none}
   .sheet{animation:none}
 }
@@ -147,46 +146,42 @@ body.enter .hero > *:nth-child(4){animation-delay:1.3s}
 </head>
 <body>
 <div class="intro" id="intro" aria-hidden="true">
-  <img src="assets/logo-terracota.png" alt="">
+  <img src="assets/logo-blue.svg" alt="">
 </div>
 
-<div class="wrap">
-  <header class="topbar">
-    <span class="label">Small-batch gelato · Cape Town</span>
-    <a class="label" href="https://www.instagram.com/fiori_gelatoZA/" target="_blank" rel="noopener">@fiori_gelatoZA ↗</a>
-  </header>
-</div>
+<header class="top"><img id="topLogo" src="assets/logo-blue.svg" alt="Fiori Gelato"></header>
 
 <main>
   <section class="hero">
     <h1 class="sr-only">Fiori Gelato: coming soon to Cape Town</h1>
-    <div class="hero-logo-wrap"><img class="hero-logo" src="assets/logo-blue.svg" alt="Fiori Gelato"></div>
-    <div class="soon-run" aria-hidden="true">
-      <div class="soon-track" id="soonTrack">
-        <div class="soon-set"><span>Coming soon</span><span class="a">coming soon</span><span>Coming soon</span><span class="a">coming soon</span></div>
-        <div class="soon-set"><span>Coming soon</span><span class="a">coming soon</span><span>Coming soon</span><span class="a">coming soon</span></div>
-      </div>
-    </div>
-    <p class="wrap slogan"><span class="t">Made in small batches.</span><span class="a">shared in good company.</span></p>
+    <svg class="wave" id="wave" aria-hidden="true"></svg>
   </section>
 
   <section class="about">
-    <div class="wrap">
-      <div class="about-grid">
-        <div class="about-copy">
-          <h2 class="headline">We're starting small.</h2>
-          <p class="accent">and growing toward a store.</p>
-          <p class="body">We make gelato by hand, in small batches. You'll soon find us at events and markets around Cape Town, and you'll be able to buy directly from us. We're working towards opening our own gelato taste kitchen and storefront.</p>
-        </div>
-        <a class="btn btn-latte" href="#notify" data-notify>Tell me when you're serving</a>
-      </div>
-      <footer class="foot-line">
-        <span class="label">fiori-gelato.co.za</span>
-        <a class="label" href="https://www.instagram.com/fiori_gelatoZA/" target="_blank" rel="noopener">Instagram @fiori_gelatoZA ↗</a>
-      </footer>
+    <div class="wrap about-inner">
+      <h2 class="headline">Made in small batches.</h2>
+      <p class="accent">shared in good company.</p>
+      <p class="body"><span class="ln">We make our gelato using authentic and the highest of quality ingredients.</span><span class="ln">You will soon find us at markets and private events around Cape Town. You can also buy directly from us.</span><span class="ln">This all forms part of our journey towards a dedicated store.</span></p>
     </div>
   </section>
 </main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="cols">
+      <div class="col wide">
+        <span class="h">follow us on our journey</span>
+        <a href="https://www.instagram.com/fiori_gelatoZA/" target="_blank" rel="noopener">Instagram</a>
+      </div>
+      <div class="col wide">
+        <span class="h">be first in line</span>
+        <a class="btn btn-latte" href="#notify" data-notify style="text-decoration:none">Tell me when you're serving</a>
+      </div>
+    </div>
+    <div class="foot-line"><span class="label">fiori-gelato.co.za</span></div>
+  </div>
+  <img class="foot-protea" src="assets/protea-latte.svg" alt="">
+</footer>
 
 <div class="scrim" id="notify" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="notifyTitle">
@@ -226,22 +221,44 @@ body.enter .hero > *:nth-child(4){animation-delay:1.3s}
   var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   function buzz(ms){ try{ if (navigator.vibrate) navigator.vibrate(ms); }catch(_){} }
 
-  /* ---------- opening screen: pulse, then a slow fade as the page comes in ---------- */
+  /* ---------- opening screen: the logo pulses, then glides up to its place at the top ---------- */
   (function(){
     var intro = document.getElementById("intro");
+    var topLogo = document.getElementById("topLogo");
     if (!intro) return;
+    var logo = intro.querySelector("img");
     var gone = false, fontsReady = false, minDone = false;
     function finish(){
       if (gone) return; gone = true;
-      // stop the no-script fallback timer so it can't restart the fade and flash the white screen
+      // stop the no-script fallback timer so it can't restart and flash the screen
       intro.style.animation = "none";
       void intro.offsetWidth;
-      intro.classList.add("leave");
       document.body.classList.add("enter");
-      var removed = false;
-      function drop(){ if (removed) return; removed = true; intro.style.visibility = "hidden"; intro.remove(); }
-      intro.addEventListener("transitionend", function(e){ if (e.target === intro && e.propertyName === "opacity") drop(); });
-      setTimeout(drop, reduce ? 800 : 3400);
+      if (reduce || !topLogo || !logo.animate){
+        intro.classList.add("leave");
+        setTimeout(function(){ intro.remove(); }, 600);
+        return;
+      }
+      // freeze the pulse where it is, then fly the logo onto the header logo
+      var from = getComputedStyle(logo).transform;
+      if (!from || from === "none") from = "matrix(1,0,0,1,0,0)";
+      logo.style.animation = "none";
+      logo.style.transform = from;
+      var a = logo.getBoundingClientRect(), b = topLogo.getBoundingClientRect();
+      var scale = b.width / (a.width || 1);
+      var dx = (b.left + b.width / 2) - (a.left + a.width / 2);
+      var dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+      // the measured box already includes the frozen pulse scale, so undo it before moving
+      var m = from.match(/matrix\(([^,]+)/), base = m ? parseFloat(m[1]) || 1 : 1;
+      topLogo.style.visibility = "hidden";
+      intro.classList.add("leave");
+      var anim = logo.animate([
+        {transform: from},
+        {transform: "translate(" + dx + "px," + dy + "px) scale(" + (scale * base) + ")"}
+      ], {duration: 1700, easing: "cubic-bezier(.65,0,.3,1)", fill: "forwards"});
+      function done(){ topLogo.style.visibility = ""; intro.remove(); }
+      anim.onfinish = done;
+      setTimeout(function(){ if (document.body.contains(intro)) done(); }, 2600);
     }
     function check(){ if (fontsReady && minDone) finish(); }
     setTimeout(function(){ minDone = true; check(); }, reduce ? 600 : 2600);
@@ -251,29 +268,75 @@ body.enter .hero > *:nth-child(4){animation-delay:1.3s}
     intro.addEventListener("click", finish);
   })();
 
-  /* ---------- COMING SOON line: slides steadily, a little faster while you scroll ---------- */
+  /* ---------- COMING SOON along a gentle wave, drifting left, with the Fiori stamp between ---------- */
   (function(){
-    var track = document.getElementById("soonTrack");
-    if (!track || reduce) return;
-    var x = 0, boost = 0, lastY = window.scrollY, last = performance.now(), half = 0;
-    function measure(){ half = track.scrollWidth / 2; }
-    measure();
-    window.addEventListener("resize", measure);
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
-    window.addEventListener("scroll", function(){
-      var y = window.scrollY;
-      boost = Math.min(160, boost + Math.abs(y - lastY) * 0.8);
-      lastY = y;
-    }, {passive:true});
+    var svg = document.getElementById("wave");
+    if (!svg) return;
+    var NS = "http://www.w3.org/2000/svg", XL = "http://www.w3.org/1999/xlink";
+    var STAMP = "assets/stamp-blue.svg", WORD = "COMING SOON";
+    var H = 170, W = 0, unitLen = 0, wordLen = 0, gap = 0, stampSize = 0, capMid = 0, pathLen = 0;
+    var x = 0, last = performance.now(), path = null, words = [], stamps = [];
+    function el(tag, attrs){ var n = document.createElementNS(NS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); return n; }
+    function build(){
+      W = Math.max(320, svg.clientWidth || window.innerWidth);
+      var fs = Math.round(Math.max(36, Math.min(66, W * 0.1)));
+      var amp = Math.min(22, W * 0.04), wl = Math.max(420, W * 0.9);
+      svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      stampSize = fs * 0.6; capMid = fs * 0.36; gap = fs * 1.1;
+      // measure the word exactly as it is drawn
+      var probe = el("text", {"font-size":fs, x:0, y:-400}); probe.textContent = WORD; svg.appendChild(probe);
+      wordLen = probe.getComputedTextLength() || fs * 6.4;
+      svg.removeChild(probe);
+      unitLen = wordLen + gap;
+      var start = -unitLen - wl, end = W + wl, mid = H * 0.56, d = "M " + start + " " + mid;
+      for (var px = start, up = true; px < end; px += wl / 2, up = !up){
+        d += " Q " + (px + wl / 4) + " " + (mid + (up ? -amp : amp) * 2) + " " + (px + wl / 2) + " " + mid;
+      }
+      var defs = el("defs", {}); path = el("path", {id:"wavePath", d:d, fill:"none"});
+      defs.appendChild(path); svg.appendChild(defs);
+      pathLen = path.getTotalLength();
+      var reps = Math.ceil(pathLen / unitLen) + 2;
+      words = []; stamps = [];
+      for (var k = 0; k < reps; k++){
+        var t = el("text", {"font-size":fs});
+        var tp = el("textPath", {href:"#wavePath"}); tp.setAttributeNS(XL, "xlink:href", "#wavePath");
+        tp.textContent = WORD; t.appendChild(tp); svg.appendChild(t); words.push(tp);
+        var im = el("image", {width:stampSize, height:stampSize, href:STAMP, preserveAspectRatio:"xMidYMid meet"});
+        im.setAttributeNS(XL, "xlink:href", STAMP);
+        svg.appendChild(im); stamps.push(im);
+      }
+      place();
+    }
+    function place(){
+      var half = stampSize / 2;
+      for (var k = 0; k < words.length; k++){
+        var w0 = x + k * unitLen;
+        words[k].setAttribute("startOffset", w0.toFixed(2));
+        var at = w0 + wordLen + gap / 2, im = stamps[k];
+        if (at < half || at > pathLen - half){ im.setAttribute("visibility", "hidden"); continue; }
+        var p = path.getPointAtLength(at), q = path.getPointAtLength(Math.min(pathLen, at + 2));
+        var ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
+        im.setAttribute("visibility", "visible");
+        // centre the stamp on the middle of the capital letters
+        im.setAttribute("transform", "translate(" + p.x.toFixed(2) + " " + p.y.toFixed(2) + ") rotate(" + ang.toFixed(2) + ") translate(" + (-half).toFixed(2) + " " + (-half - capMid).toFixed(2) + ")");
+      }
+    }
     function step(now){
       var dt = Math.min(.05, (now - last) / 1000); last = now;
-      x -= (70 + boost) * dt;
-      boost *= Math.pow(.15, dt);
-      if (half && -x >= half) x += half;
-      track.style.transform = "translate3d(" + x.toFixed(2) + "px,0,0)";
+      x -= 55 * dt;
+      if (unitLen && -x >= unitLen) x += unitLen;
+      place();
       requestAnimationFrame(step);
     }
-    requestAnimationFrame(step);
+    build();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(build);
+    var rt = 0, lastW = 0;
+    window.addEventListener("resize", function(){
+      clearTimeout(rt);
+      rt = setTimeout(function(){ var w = svg.clientWidth; if (w !== lastW){ lastW = w; build(); } }, 150);
+    });
+    if (!reduce) requestAnimationFrame(step);
   })();
 
   /* ---------- notify sheet: our own form, answers sent to the Google Form ---------- */
