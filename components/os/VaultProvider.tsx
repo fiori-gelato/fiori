@@ -61,6 +61,8 @@ interface Ctx {
     password: string,
     stayUnlocked?: boolean
   ) => Promise<string>;
+  /** Attaches a sign-in to a vault that is already open. */
+  linkAccount: (email: string, password: string) => Promise<string>;
   /** One-time conversion of a vault sealed with the old passphrase. */
   migrateWithPassphrase: (
     email: string,
@@ -445,6 +447,56 @@ export default function VaultProvider({
     []
   );
 
+  /**
+   * Attaches a sign-in to the vault that is already open.
+   *
+   * The way back in after a backup is restored: the work is here but has no
+   * account behind it yet. This makes or joins one, re-seals what is open
+   * with the password, and sends it up — so the other devices need only the
+   * email and password from then on.
+   */
+  const linkAccount = useCallback(
+    async (email: string, password: string): Promise<string> => {
+      const current = vaultRef.current;
+      if (!current) throw new Error("Nothing is open to link.");
+
+      let acct: Account | null = null;
+      let note = "";
+      try {
+        acct = await cloudSignUp(email, password);
+        if (!acct) note = CONFIRM_EMAIL;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "";
+        /* Already registered, so join it instead of making a second one. */
+        if (!msg.includes("already has an account")) throw e;
+        acct = await cloudSignIn(email, password);
+      }
+
+      const salt = randomSalt();
+      const key = await deriveKey(password, salt);
+      const stamped: Vault = structuredClone(current);
+      stamped.settings.updatedAt = Date.now();
+      const resealed = await seal(key, salt, stamped);
+
+      keyRef.current = key;
+      saltRef.current = salt;
+      passRef.current = password;
+      await writeSealed(resealed);
+      await writeRemembered(password);
+      setRemembered(true);
+      setVault(stamped);
+
+      if (acct) {
+        setAccount(acct);
+        await saveVault(acct.id, resealed, stamped.settings.updatedAt!);
+        lastPushed.current = stamped.settings.updatedAt!;
+        markJoined(acct.id);
+      }
+      return note;
+    },
+    []
+  );
+
   /** Makes the account and the first vault together, from one password. */
   const registerWithPassword = useCallback(
     async (email: string, password: string, stayUnlocked = true): Promise<string> => {
@@ -785,6 +837,7 @@ export default function VaultProvider({
       signInWithPassword,
       registerWithPassword,
       migrateWithPassphrase,
+      linkAccount,
     }),
     [
       restoreFromFile,
@@ -815,6 +868,7 @@ export default function VaultProvider({
       signInWithPassword,
       registerWithPassword,
       migrateWithPassphrase,
+      linkAccount,
     ]
   );
 

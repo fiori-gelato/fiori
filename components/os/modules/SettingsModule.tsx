@@ -168,20 +168,7 @@ export default function SettingsModule() {
             </p>
           </>
         ) : (
-          <>
-            <p className="os-small os-muted">
-              Signed in on this device, but the cloud hasn't been reached yet.
-              Your work is safe here and will go up by itself once there is a
-              connection.
-            </p>
-            {syncMessage === PROJECT_PAUSED && <PausedNote />}
-            <button
-              className="os-btn os-btn--ghost os-btn--sm"
-              onClick={() => void syncNow()}
-            >
-              <RefreshCw size={13} /> Try again
-            </button>
-          </>
+          <LinkAccount onDone={flash} />
         )}
       </Card>
 
@@ -374,6 +361,86 @@ export default function SettingsModule() {
 
       {toast && <div className="os-toast">{toast}</div>}
     </div>
+  );
+}
+
+/**
+ * Creating the sign-in for work that is already here.
+ *
+ * The case after a backup is opened: the vault is on this device but has no
+ * account behind it. One email and one password makes or joins one, re-seals
+ * what is open, and sends it up.
+ */
+function LinkAccount({ onDone }: { onDone: (msg: string) => void }) {
+  const { linkAccount, syncMessage } = useVault();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  return (
+    <>
+      <p className="os-small os-muted">
+        Your work is on this device but has no sign-in yet. Choose an email and
+        a password and it will be saved to the cloud, so the same two open it
+        on your phone and anywhere else.
+      </p>
+      {syncMessage === PROJECT_PAUSED && <PausedNote />}
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setError("");
+          setBusy(true);
+          try {
+            const msg = await linkAccount(email.trim().toLowerCase(), password);
+            onDone(msg || "Saved. This work is now on your account.");
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "That didn't work.");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <div className="os-row">
+          <Field label="Email">
+            <input
+              className="os-input"
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </Field>
+          <Field label="Password">
+            <span className="os-reveal" style={{ display: "block" }}>
+              <input
+                className="os-input"
+                type={show ? "text" : "password"}
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShow((v) => !v)}
+                aria-label={show ? "Hide password" : "Show password"}
+              >
+                {show ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </span>
+          </Field>
+        </div>
+        {error && (
+          <p className="os-small" style={{ color: "var(--os-danger)" }}>
+            {error}
+          </p>
+        )}
+        <button className="os-btn" disabled={busy || !email || password.length < 8}>
+          {busy ? "Saving…" : "Save my work to the cloud"}
+        </button>
+      </form>
+    </>
   );
 }
 
