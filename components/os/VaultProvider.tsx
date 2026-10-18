@@ -50,6 +50,17 @@ interface Ctx {
   update: (fn: (draft: Vault) => void) => void;
   create: (passphrase: string, stayUnlocked?: boolean) => Promise<void>;
   unlock: (passphrase: string, stayUnlocked?: boolean) => Promise<boolean>;
+  /** One sign-in for every device: email and password. */
+  signInWithPassword: (
+    email: string,
+    password: string,
+    stayUnlocked?: boolean
+  ) => Promise<string>;
+  registerWithPassword: (
+    email: string,
+    password: string,
+    stayUnlocked?: boolean
+  ) => Promise<string>;
   lock: () => Promise<void>;
   /** This device opens without being asked for the passphrase. */
   remembered: boolean;
@@ -130,6 +141,11 @@ function isUntouched(v: Vault): boolean {
 
 /** Returned by cloudRegister when the project still asks for email
  *  confirmation, so the form knows to offer the link again. */
+/** Raised when the account is real but has never stored anything, so there
+ *  is nothing to pull down and nothing on this device either. */
+export const NO_VAULT_YET =
+  "That account has nothing stored yet. Sign in on the device that holds your work first, so it can be saved up.";
+
 export const CONFIRM_EMAIL =
   "Account made. Open the confirmation link in your email on this device, then come back here.";
 
@@ -288,6 +304,91 @@ export default function VaultProvider({
     setRemembered(false);
     return true;
   }, []);
+
+  /**
+   * One sign-in, on any device: email and password, and the work appears.
+   *
+   * The password does two separate jobs and they are kept apart on purpose.
+   * `signIn` hands the cloud a secret derived from it, which proves who you
+   * are and can decrypt nothing. The key that opens the vault is derived from
+   * the same password against the vault's own salt, here, and never leaves
+   * this browser.
+   *
+   * A copy already on this device is opened first, so a bad connection or a
+   * sleeping project still lets you work; the cloud is reconciled after.
+   */
+  const signInWithPassword = useCallback(
+    async (email: string, password: string, stayUnlocked = true): Promise<string> => {
+      const local = await readSealed().catch(() => null);
+      let opened = false;
+
+      if (local && (await openWith(password, local))) opened = true;
+
+      let acct: Account | null = null;
+      let cloudError = "";
+      try {
+        acct = await cloudSignIn(email, password);
+        setAccount(acct);
+      } catch (e) {
+        cloudError = e instanceof Error ? e.message : "Could not reach the cloud.";
+      }
+
+      if (!opened) {
+        /* Nothing here to open, so the copy has to come down. */
+        if (!acct) throw new Error(cloudError || "No connection, and nothing saved on this device yet.");
+        const remote = await fetchVault(acct.id);
+        if (!remote) throw new Error(NO_VAULT_YET);
+        const key = await deriveKey(password, saltFromSealed(remote.sealed));
+        const data = await unseal<Vault>(key, remote.sealed);
+        if (!data) throw new Error("That password doesn't open this account's data.");
+        keyRef.current = key;
+        saltRef.current = saltFromSealed(remote.sealed);
+        passRef.current = password;
+        lastPushed.current = remote.updatedAt;
+        await writeSealed(remote.sealed);
+        setVault({ ...seedVault(), ...data });
+        setStatus("open");
+        if (acct) markJoined(acct.id);
+        opened = true;
+      }
+
+      if (stayUnlocked) {
+        await writeRemembered(password);
+        setRemembered(true);
+      }
+      return cloudError
+        ? "Opened on this device. The cloud is unreachable, so changes will go up later."
+        : "";
+    },
+    [openWith]
+  );
+
+  /** Makes the account and the first vault together, from one password. */
+  const registerWithPassword = useCallback(
+    async (email: string, password: string, stayUnlocked = true): Promise<string> => {
+      const acct = await cloudSignUp(email, password);
+      const salt = randomSalt();
+      const key = await deriveKey(password, salt);
+      keyRef.current = key;
+      saltRef.current = salt;
+      passRef.current = password;
+      const fresh = seedVault();
+      await writeSealed(await seal(key, salt, fresh));
+      if (stayUnlocked) {
+        await writeRemembered(password);
+        setRemembered(true);
+      }
+      setVault(fresh);
+      setStatus("open");
+      if (acct) {
+        setAccount(acct);
+        markJoined(acct.id);
+        return "";
+      }
+      return CONFIRM_EMAIL;
+    },
+    []
+  );
 
   const lock = useCallback(async () => {
     /* Locking has to mean locked, so it also stops this device letting
@@ -599,6 +700,8 @@ export default function VaultProvider({
       cloudLogout,
       remembered,
       setStayUnlocked,
+      signInWithPassword,
+      registerWithPassword,
     }),
     [
       restoreFromFile,
@@ -626,6 +729,8 @@ export default function VaultProvider({
       syncDown,
       remembered,
       setStayUnlocked,
+      signInWithPassword,
+      registerWithPassword,
     ]
   );
 

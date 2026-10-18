@@ -13,7 +13,7 @@
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Sealed } from "./crypto";
+import { deriveAuthSecret, type Sealed } from "./crypto";
 
 export const SUPABASE_URL = "https://xzsycsktkyoljbhftjqf.supabase.co";
 export const SUPABASE_KEY = "sb_publishable_RNXvhxgWHPHIRckX_yOZJA_qKCoa2fI";
@@ -79,9 +79,16 @@ export async function currentAccount(): Promise<Account | null> {
   return user ? { id: user.id, email: user.email ?? "" } : null;
 }
 
+/**
+ * Signs in with a secret derived from the password, never the password.
+ *
+ * Supabase only ever sees `deriveAuthSecret`'s output, which cannot decrypt
+ * the vault. The password itself stays in this browser.
+ */
 export async function signIn(email: string, password: string): Promise<Account> {
+  const secret = await deriveAuthSecret(email, password);
   const { data, error } = await reachable(() =>
-    cloud().auth.signInWithPassword({ email, password })
+    cloud().auth.signInWithPassword({ email, password: secret })
   );
   if (error) throw new Error(friendly(error.message));
   return { id: data.user!.id, email: data.user!.email ?? "" };
@@ -103,10 +110,11 @@ async function reachable<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 export async function signUp(email: string, password: string): Promise<Account | null> {
+  const secret = await deriveAuthSecret(email, password);
   const { data, error } = await reachable(() =>
     cloud().auth.signUp({
       email,
-      password,
+      password: secret,
       /* Without this, a confirmation email points at whatever Site URL the
          project was created with — by default http://localhost:3000, which is
          a development address that exists on nobody's phone. Send people back

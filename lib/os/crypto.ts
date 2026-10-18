@@ -55,6 +55,46 @@ export function randomSalt(): Uint8Array {
   return crypto.getRandomValues(new Uint8Array(16));
 }
 
+/**
+ * The secret this device sends to the cloud in place of the password.
+ *
+ * One password, two secrets, and they must never be the same one. The key
+ * that decrypts the vault is derived against the vault's own salt and stays
+ * on the device. What goes to Supabase to prove who you are is derived here,
+ * against a different salt, and is useless for decrypting anything — so a
+ * breach of the account database, or of Supabase itself, yields nothing that
+ * opens the books.
+ *
+ * The email is mixed into the salt so the same password chosen by two people
+ * does not produce the same stored secret.
+ */
+export async function deriveAuthSecret(
+  email: string,
+  password: string
+): Promise<string> {
+  const salt = enc.encode(`fiori-os|auth|${email.trim().toLowerCase()}`);
+  const base = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt: salt as unknown as BufferSource,
+      iterations: PBKDF2_ROUNDS,
+      hash: "SHA-256",
+    },
+    base,
+    256
+  );
+  /* Supabase stores this as if it were the password, so it has to survive a
+     text field: base64 of 32 bytes, well past any sane strength rule. */
+  return bufToB64(bits);
+}
+
 export interface Sealed {
   salt: string;
   iv: string;

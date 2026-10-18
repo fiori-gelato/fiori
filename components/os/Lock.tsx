@@ -1,33 +1,41 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Lock as LockIcon, ShieldCheck, Upload } from "lucide-react";
+import { Eye, EyeOff, LogIn, Upload, UserPlus } from "lucide-react";
 import { asset } from "@/lib/site";
-import { useVault } from "./VaultProvider";
+import { useVault, NO_VAULT_YET } from "./VaultProvider";
 
 /**
- * Login gate. On a fresh device it either sets a new passphrase or opens a
- * backup file — the second path is how a phone picks up what was entered on
- * a laptop, since each device stores its own encrypted copy.
+ * The way in, on every device: one email and one password.
+ *
+ * The password does two jobs that are deliberately kept apart. What reaches
+ * the cloud is derived from it and can decrypt nothing; the key that opens
+ * the vault is derived separately and never leaves this browser. So the same
+ * two things typed on a phone bring the same work down, while a breach of
+ * the cloud yields no way to read any of it.
  */
 export default function Lock() {
-  const { status, create, unlock, restoreFromFile } = useVault();
+  const { status, signInWithPassword, registerWithPassword, restoreFromFile } =
+    useVault();
+  const [mode, setMode] = useState<"in" | "up" | "restore">("in");
+  const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [show, setShow] = useState(false);
+  const [stay, setStay] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [mode, setMode] = useState<"new" | "restore">("new");
+  const [note, setNote] = useState("");
   const [backup, setBackup] = useState<{ name: string; text: string } | null>(null);
-  /* Most people are opening their own laptop or phone, so this starts on. */
-  const [stay, setStay] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
-  const setup = status === "setup";
+  const fresh = status === "setup";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setNote("");
 
-    if (setup && mode === "restore") {
+    if (mode === "restore") {
       if (!backup) return setError("Choose your backup file first.");
       setBusy(true);
       try {
@@ -41,25 +49,28 @@ export default function Lock() {
       return;
     }
 
-    if (setup) {
+    const addr = email.trim().toLowerCase();
+    if (!addr) return setError("Enter the email you use for Fiori.");
+    if (mode === "up") {
       if (pass.length < 8) return setError("Use at least 8 characters.");
       if (pass !== confirm) return setError("The two entries don't match.");
-      setBusy(true);
-      await create(pass, stay);
-      setBusy(false);
-      return;
     }
 
     setBusy(true);
-    const ok = await unlock(pass, stay);
-    setBusy(false);
-    if (!ok) {
-      setError("That passphrase doesn't open this vault.");
-      setPass("");
+    try {
+      const msg =
+        mode === "up"
+          ? await registerWithPassword(addr, pass, stay)
+          : await signInWithPassword(addr, pass, stay);
+      if (msg) setNote(msg);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : "That didn't work.";
+      setError(m);
+      if (m !== NO_VAULT_YET) setPass("");
+    } finally {
+      setBusy(false);
     }
   }
-
-  const restoring = setup && mode === "restore";
 
   return (
     <div className="os-lock">
@@ -67,22 +78,22 @@ export default function Lock() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={asset("/brand/logo/fiori-complete-deepblue.svg")} alt="Fiori Gelato" />
         <h1>
-          {setup
-            ? restoring
-              ? "Open a backup"
-              : "Set your passphrase"
-            : "Welcome back"}
+          {mode === "restore"
+            ? "Open a backup"
+            : mode === "up"
+              ? "Set up Fiori OS"
+              : "Sign in"}
         </h1>
         <p>
-          {setup
-            ? restoring
-              ? "Choose the backup file exported from your other device, then enter the passphrase you use there."
-              : "This encrypts everything in the app on this device. There is no reset — write it down somewhere safe. Already using Fiori on another device? Type that same passphrase here, then sign in under Settings → Sync and your work will come down."
-            : "Enter your passphrase to unlock the business."}
+          {mode === "restore"
+            ? "Choose the backup file, then enter the password that was used when it was exported."
+            : mode === "up"
+              ? "One email and one password. The same two open your work on any device — this laptop, your phone, anywhere."
+              : "Your email and password. Everything comes down on its own."}
         </p>
 
         <form onSubmit={submit}>
-          {restoring && (
+          {mode === "restore" ? (
             <>
               <button
                 type="button"
@@ -107,34 +118,54 @@ export default function Lock() {
                 }}
               />
             </>
+          ) : (
+            <label className="os-field">
+              <span>Email</span>
+              <input
+                className="os-input"
+                type="email"
+                autoComplete="username"
+                autoFocus
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </label>
           )}
 
           <label className="os-field">
-            <span>Passphrase</span>
-            <input
-              className="os-input"
-              type="password"
-              value={pass}
-              autoFocus={!restoring}
-              autoComplete={setup && !restoring ? "new-password" : "current-password"}
-              onChange={(e) => setPass(e.target.value)}
-            />
+            <span>{mode === "restore" ? "Password for that backup" : "Password"}</span>
+            <div className="os-reveal">
+              <input
+                className="os-input"
+                type={show ? "text" : "password"}
+                autoComplete={mode === "up" ? "new-password" : "current-password"}
+                value={pass}
+                onChange={(e) => setPass(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShow((v) => !v)}
+                aria-label={show ? "Hide password" : "Show password"}
+              >
+                {show ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
           </label>
 
-          {setup && !restoring && (
+          {mode === "up" && (
             <label className="os-field">
-              <span>Confirm passphrase</span>
+              <span>Confirm password</span>
               <input
                 className="os-input"
                 type="password"
-                value={confirm}
                 autoComplete="new-password"
+                value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
               />
             </label>
           )}
 
-          {!restoring && (
+          {mode !== "restore" && (
             <label className="os-check">
               <input
                 type="checkbox"
@@ -142,57 +173,86 @@ export default function Lock() {
                 onChange={(e) => setStay(e.target.checked)}
               />
               <span>
-                Stay unlocked on this device
+                Stay signed in on this device
                 <span className="os-small os-muted">
                   {" "}
-                  — don&rsquo;t ask again here. Use it on devices only you can
-                  get into.
+                  — use it on devices only you can get into.
                 </span>
               </span>
             </label>
           )}
 
           {error && (
-            <p className="os-small" style={{ color: "var(--os-danger)", marginTop: -4 }}>
+            <p className="os-small" style={{ color: "var(--os-danger)", marginTop: 8 }}>
               {error}
+            </p>
+          )}
+          {note && (
+            <p className="os-small os-muted" style={{ marginTop: 8 }}>
+              {note}
             </p>
           )}
 
           <button
             className="os-btn"
-            style={{ width: "100%", marginTop: 8 }}
-            disabled={busy || !pass || (restoring && !backup)}
+            style={{ width: "100%", marginTop: 10 }}
+            disabled={busy || !pass || (mode === "restore" ? !backup : !email)}
           >
-            {setup ? <ShieldCheck size={15} /> : <LockIcon size={15} />}
+            {mode === "up" ? <UserPlus size={15} /> : <LogIn size={15} />}
             {busy
               ? "Working…"
-              : restoring
+              : mode === "restore"
                 ? "Open backup"
-                : setup
-                  ? "Create vault"
-                  : "Unlock"}
+                : mode === "up"
+                  ? "Create my account"
+                  : "Sign in"}
           </button>
         </form>
 
-        {setup && (
-          <button
-            className="os-btn os-btn--ghost os-btn--sm"
-            style={{ width: "100%", marginTop: 10 }}
-            onClick={() => {
-              setMode(restoring ? "new" : "restore");
-              setError("");
-              setPass("");
-              setConfirm("");
-            }}
-          >
-            {restoring
-              ? "Start a new vault instead"
-              : "Already have a backup from another device?"}
-          </button>
-        )}
+        <div className="os-flex" style={{ marginTop: 12, justifyContent: "center" }}>
+          {mode !== "up" && (
+            <button
+              className="os-btn os-btn--ghost os-btn--sm"
+              onClick={() => {
+                setMode("up");
+                setError("");
+                setNote("");
+              }}
+            >
+              First time here
+            </button>
+          )}
+          {mode !== "in" && (
+            <button
+              className="os-btn os-btn--ghost os-btn--sm"
+              onClick={() => {
+                setMode("in");
+                setError("");
+                setNote("");
+              }}
+            >
+              Sign in instead
+            </button>
+          )}
+          {mode !== "restore" && fresh && (
+            <button
+              className="os-btn os-btn--ghost os-btn--sm"
+              onClick={() => {
+                setMode("restore");
+                setError("");
+                setNote("");
+                setPass("");
+              }}
+            >
+              Open a backup file
+            </button>
+          )}
+        </div>
 
         <p className="os-small os-muted" style={{ marginTop: 18, marginBottom: 0 }}>
-          Encrypted with AES-GCM on this device. Nothing is sent anywhere.
+          Your work is encrypted with your password before it leaves this
+          device. The cloud stores it sealed and never receives the password
+          itself, so nobody there can read your books.
         </p>
       </div>
     </div>
