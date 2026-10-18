@@ -97,8 +97,30 @@
   background: #073c8c;   /* Deep Blue leads: it is the ground behind the logo */
 }
 .os-lock-card {
+  /* The field behind this card is always Deep Blue, so the card is always
+     the light treatment — otherwise a device set to dark mode paints a blue
+     card on a blue ground and the whole thing disappears. The light tokens
+     are redeclared here rather than inherited. */
+  --os-bg: #ffffff;
+  --os-surface: #ffffff;
+  --os-surface-2: #f4eee5;
+  --os-line: #d3ad80;
+  --os-text: #073c8c;
+  --os-muted: #ab501b;
+  --os-soft: #073c8c;
+  --os-accent: #073c8c;
+  --os-accent-soft: #d3ad80;
+  --os-caramel: #ab501b;
+  --os-caramel-soft: #d3ad80;
+  --os-danger: #ab501b;
+  --os-danger-fill: #ab501b;
+  --os-on-fill: #f4eee5;
+  --os-on-danger: #f4eee5;
+  --os-on-caramel: #073c8c;
+
   width: min(420px, 100%);
   background: var(--os-surface);
+  color: var(--os-text);
   border-radius: var(--os-radius-lg);
   padding: clamp(28px, 5vw, 40px);
   box-shadow: var(--os-shadow-lg);
