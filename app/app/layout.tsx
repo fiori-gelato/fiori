@@ -4,8 +4,17 @@ import { asset } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Fiori OS",
   description: "Operating system for Fiori Gelato.",
-  /* Private tool — keep it out of search results. */
-  robots: { index: false, follow: false },
+  /* Private tool — keep it out of search results, and out of the link
+     previews a messaging app builds. Without this it inherits the deck's
+     card and announces an investor pack to whoever the link reaches. */
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: { index: false, follow: false, noimageindex: true },
+  },
+  openGraph: { title: "Fiori OS", description: "", images: [] },
+  twitter: { card: "summary", title: "Fiori OS", description: "" },
   manifest: asset("/app.webmanifest"),
   /* iOS ignores the manifest's icons and looks for this one. */
   appleWebApp: {

@@ -1,0 +1,46 @@
+name: Deploy Fiori OS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # Served from https://fiori-gelato.github.io/os/ — nothing of the
+      # brand's public site lives here.
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_PATH: /os
+          NEXT_PUBLIC_SITE_URL: https://fiori-gelato.github.io
+
+      # Publish the app and nothing else. The investor deck's page, its
+      # photography and the survey stay out of this deployment: this address
+      # is for the operating system alone.
+      - name: Keep only what the app serves
+        run: |
+          rm -f out/index.html out/index.txt
+          rm -rf out/docs out/survey
+          find out/assets -type f ! -name 'icon-*' -delete
+          echo "published:" && find out -type f | wc -l
+
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out

@@ -8,6 +8,13 @@ export const metadata: Metadata = {
   description:
     "Fiori Gelato — investor information pack, Cape Town, July 2026. Establishing a premium gelato brand at reduced risk, before scaling.",
   icons: { icon: asset("/brand/mark/f-oval-deepblue.svg") },
+  /* Private document: the figures in it are not for a search result. */
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: { index: false, follow: false, noimageindex: true },
+  },
   openGraph: {
     title: "Fiori Gelato — Investor information pack",
     description:
