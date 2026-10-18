@@ -214,6 +214,13 @@ export const NEEDS_SETUP =
  * before it ever reaches a table — which reads exactly like being offline
  * unless it is called by name.
  */
+/**
+ * Raised when the project has sign-ups switched off. Worth naming, because
+ * the way out is one toggle in a dashboard and nobody would guess where.
+ */
+export const SIGNUPS_CLOSED =
+  "New sign-ups are closed on this project. Turn \u201cAllow new users to sign up\u201d back on in Supabase \u2192 Authentication \u2192 Sign In / Providers, then try again.";
+
 export const PROJECT_PAUSED =
   "The Supabase project is paused or unreachable. Nothing is lost — your data is on this device.";
 
@@ -235,8 +242,8 @@ function friendly(message: string): string {
     return "That account still needs its email confirmed — open the link we sent, or use “Send the link again”.";
   if (m.includes("expired") || m.includes("otp"))
     return "That confirmation link has expired — use “Send the link again”.";
-  if (m.includes("signups not allowed") || m.includes("sign ups"))
-    return "New sign-ups are closed on this project.";
+  if (m.includes("signups not allowed") || m.includes("sign ups") || m.includes("signup is disabled"))
+    return SIGNUPS_CLOSED;
   if (m.includes("password") && m.includes("6"))
     return "Use a password of at least 6 characters.";
   if (

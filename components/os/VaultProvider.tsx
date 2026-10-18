@@ -467,9 +467,22 @@ export default function VaultProvider({
         if (!acct) note = CONFIRM_EMAIL;
       } catch (e) {
         const msg = e instanceof Error ? e.message : "";
-        /* Already registered, so join it instead of making a second one. */
-        if (!msg.includes("already has an account")) throw e;
-        acct = await cloudSignIn(email, password);
+        /* Two different refusals both mean "don't make one, join one": the
+           email is already taken, or the project has sign-ups closed. In
+           either case an account may already exist for this email, so try
+           it before giving up. */
+        const joinInstead =
+          msg.includes("already has an account") || msg.includes("sign-ups are closed");
+        if (!joinInstead) throw e;
+        try {
+          acct = await cloudSignIn(email, password);
+        } catch {
+          throw new Error(
+            msg.includes("sign-ups are closed")
+              ? "New sign-ups are closed on this project, and this email and password don't match an account that already exists. Turn “Allow new users to sign up” back on in Supabase → Authentication → Sign In / Providers, then try again."
+              : "That email already has an account, but this password doesn't open it."
+          );
+        }
       }
 
       const salt = randomSalt();
