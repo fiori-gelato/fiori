@@ -87,11 +87,29 @@ export async function currentAccount(): Promise<Account | null> {
  */
 export async function signIn(email: string, password: string): Promise<Account> {
   const secret = await deriveAuthSecret(email, password);
-  const { data, error } = await reachable(() =>
+  const first = await reachable(() =>
     cloud().auth.signInWithPassword({ email, password: secret })
   );
-  if (error) throw new Error(friendly(error.message));
-  return { id: data.user!.id, email: data.user!.email ?? "" };
+  if (!first.error) {
+    return { id: first.data.user!.id, email: first.data.user!.email ?? "" };
+  }
+
+  /* An account made before the password was split in two still has the raw
+     password stored against it. Rather than send anyone to a dashboard to
+     delete a user, accept it once and upgrade it in place, so the next sign
+     in anywhere uses the derived secret like every other. */
+  const legacy = await reachable(() =>
+    cloud().auth.signInWithPassword({ email, password })
+  );
+  if (legacy.error) throw new Error(friendly(first.error.message));
+
+  const upgrade = await reachable(() => cloud().auth.updateUser({ password: secret }));
+  if (upgrade.error) {
+    /* Signed in, but the stored secret is still the old one. Say nothing and
+       carry on — it will be tried again next time. */
+    console.warn("Could not upgrade the stored secret:", upgrade.error.message);
+  }
+  return { id: legacy.data.user!.id, email: legacy.data.user!.email ?? "" };
 }
 
 /**

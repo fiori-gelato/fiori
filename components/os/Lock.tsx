@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Eye, EyeOff, LogIn, Upload, UserPlus } from "lucide-react";
 import { asset } from "@/lib/site";
-import { useVault, NO_VAULT_YET } from "./VaultProvider";
+import { useVault, NEEDS_PASSPHRASE, NO_VAULT_YET } from "./VaultProvider";
 
 /**
  * The way in, on every device: one email and one password.
@@ -15,8 +15,13 @@ import { useVault, NO_VAULT_YET } from "./VaultProvider";
  * the cloud yields no way to read any of it.
  */
 export default function Lock() {
-  const { status, signInWithPassword, registerWithPassword, restoreFromFile } =
-    useVault();
+  const {
+    status,
+    signInWithPassword,
+    registerWithPassword,
+    migrateWithPassphrase,
+    restoreFromFile,
+  } = useVault();
   const [mode, setMode] = useState<"in" | "up" | "restore">("in");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -27,6 +32,8 @@ export default function Lock() {
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [backup, setBackup] = useState<{ name: string; text: string } | null>(null);
+  /* Set when the saved data turns out to predate the single password. */
+  const [oldPass, setOldPass] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const fresh = status === "setup";
 
@@ -50,6 +57,21 @@ export default function Lock() {
     }
 
     const addr = email.trim().toLowerCase();
+
+    if (oldPass !== null) {
+      setBusy(true);
+      try {
+        const msg = await migrateWithPassphrase(addr, pass, oldPass);
+        setOldPass(null);
+        if (msg) setNote(msg);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "That didn't work.");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
     if (!addr) return setError("Enter the email you use for Fiori.");
     if (mode === "up") {
       if (pass.length < 8) return setError("Use at least 8 characters.");
@@ -65,8 +87,13 @@ export default function Lock() {
       if (msg) setNote(msg);
     } catch (err) {
       const m = err instanceof Error ? err.message : "That didn't work.";
-      setError(m);
-      if (m !== NO_VAULT_YET) setPass("");
+      if (m === NEEDS_PASSPHRASE) {
+        setOldPass("");
+        setNote("");
+      } else {
+        setError(m);
+        if (m !== NO_VAULT_YET) setPass("");
+      }
     } finally {
       setBusy(false);
     }
@@ -152,7 +179,28 @@ export default function Lock() {
             </div>
           </label>
 
-          {mode === "up" && (
+          {oldPass !== null && (
+            <div className="os-note" style={{ marginBottom: 12 }}>
+              <p className="os-small" style={{ marginBottom: 8 }}>
+                <strong>One last time.</strong> Your saved work was sealed with
+                the separate passphrase you used before. Enter it once and it
+                will be re-sealed with the password above — after this, the
+                email and password alone open it anywhere.
+              </p>
+              <label className="os-field" style={{ marginBottom: 0 }}>
+                <span>Your old passphrase</span>
+                <input
+                  className="os-input"
+                  type="password"
+                  autoFocus
+                  value={oldPass}
+                  onChange={(e) => setOldPass(e.target.value)}
+                />
+              </label>
+            </div>
+          )}
+
+          {mode === "up" && oldPass === null && (
             <label className="os-field">
               <span>Confirm password</span>
               <input
@@ -196,16 +244,22 @@ export default function Lock() {
           <button
             className="os-btn"
             style={{ width: "100%", marginTop: 10 }}
-            disabled={busy || !pass || (mode === "restore" ? !backup : !email)}
+            disabled={
+              busy ||
+              !pass ||
+              (oldPass !== null ? !oldPass : mode === "restore" ? !backup : !email)
+            }
           >
             {mode === "up" ? <UserPlus size={15} /> : <LogIn size={15} />}
             {busy
               ? "Working…"
-              : mode === "restore"
-                ? "Open backup"
-                : mode === "up"
-                  ? "Create my account"
-                  : "Sign in"}
+              : oldPass !== null
+                ? "Unlock and convert"
+                : mode === "restore"
+                  ? "Open backup"
+                  : mode === "up"
+                    ? "Create my account"
+                    : "Sign in"}
           </button>
         </form>
 

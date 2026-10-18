@@ -61,6 +61,12 @@ interface Ctx {
     password: string,
     stayUnlocked?: boolean
   ) => Promise<string>;
+  /** One-time conversion of a vault sealed with the old passphrase. */
+  migrateWithPassphrase: (
+    email: string,
+    password: string,
+    oldPassphrase: string
+  ) => Promise<string>;
   lock: () => Promise<void>;
   /** This device opens without being asked for the passphrase. */
   remembered: boolean;
@@ -143,6 +149,10 @@ function isUntouched(v: Vault): boolean {
  *  confirmation, so the form knows to offer the link again. */
 /** Raised when the account is real but has never stored anything, so there
  *  is nothing to pull down and nothing on this device either. */
+/** Raised when the stored vault predates the single password and is still
+ *  sealed with the old separate passphrase. */
+export const NEEDS_PASSPHRASE = "needs-old-passphrase";
+
 export const NO_VAULT_YET =
   "That account has nothing stored yet. Sign in on the device that holds your work first, so it can be saved up.";
 
@@ -323,6 +333,7 @@ export default function VaultProvider({
       let opened = false;
 
       if (local && (await openWith(password, local))) opened = true;
+      const localNeedsPassphrase = !!local && !opened;
 
       let acct: Account | null = null;
       let cloudError = "";
@@ -335,12 +346,18 @@ export default function VaultProvider({
 
       if (!opened) {
         /* Nothing here to open, so the copy has to come down. */
-        if (!acct) throw new Error(cloudError || "No connection, and nothing saved on this device yet.");
+        if (!acct) {
+          if (localNeedsPassphrase) throw new Error(NEEDS_PASSPHRASE);
+          throw new Error(cloudError || "No connection, and nothing saved on this device yet.");
+        }
         const remote = await fetchVault(acct.id);
-        if (!remote) throw new Error(NO_VAULT_YET);
+        if (!remote) throw new Error(localNeedsPassphrase ? NEEDS_PASSPHRASE : NO_VAULT_YET);
         const key = await deriveKey(password, saltFromSealed(remote.sealed));
         const data = await unseal<Vault>(key, remote.sealed);
-        if (!data) throw new Error("That password doesn't open this account's data.");
+        /* Saved before one password did both jobs: the data is sealed with
+           the separate passphrase, so it is asked for once and the vault is
+           re-sealed with the password from then on. */
+        if (!data) throw new Error(NEEDS_PASSPHRASE);
         keyRef.current = key;
         saltRef.current = saltFromSealed(remote.sealed);
         passRef.current = password;
@@ -361,6 +378,71 @@ export default function VaultProvider({
         : "";
     },
     [openWith]
+  );
+
+  /**
+   * Converts a vault saved under the old separate passphrase.
+   *
+   * Opens it with the passphrase one last time, re-seals it with a key
+   * derived from the password, and pushes that up — so from here on the
+   * email and password alone are enough on any device.
+   */
+  const migrateWithPassphrase = useCallback(
+    async (email: string, password: string, oldPassphrase: string): Promise<string> => {
+      let acct: Account | null = accountRef.current;
+      if (!acct) {
+        try {
+          acct = await cloudSignIn(email, password);
+          setAccount(acct);
+        } catch {
+          /* Offline: a local copy can still be converted here. */
+        }
+      }
+
+      let sealedOld: Sealed | null = await readSealed().catch(() => null);
+      let openedOld = sealedOld
+        ? await unseal<Vault>(await deriveKey(oldPassphrase, saltFromSealed(sealedOld)), sealedOld)
+        : null;
+
+      if (!openedOld && acct) {
+        const remote = await fetchVault(acct.id);
+        if (remote) {
+          sealedOld = remote.sealed;
+          openedOld = await unseal<Vault>(
+            await deriveKey(oldPassphrase, saltFromSealed(remote.sealed)),
+            remote.sealed
+          );
+        }
+      }
+      if (!openedOld) throw new Error("That passphrase doesn't open your saved data.");
+
+      const salt = randomSalt();
+      const key = await deriveKey(password, salt);
+      const merged: Vault = { ...seedVault(), ...openedOld };
+      merged.settings.updatedAt = Date.now();
+      const resealed = await seal(key, salt, merged);
+
+      keyRef.current = key;
+      saltRef.current = salt;
+      passRef.current = password;
+      await writeSealed(resealed);
+      await writeRemembered(password);
+      setRemembered(true);
+      setVault(merged);
+      setStatus("open");
+
+      if (acct) {
+        try {
+          await saveVault(acct.id, resealed, merged.settings.updatedAt!);
+          lastPushed.current = merged.settings.updatedAt!;
+          markJoined(acct.id);
+        } catch {
+          return "Converted on this device. It will go up to the cloud when there is a connection.";
+        }
+      }
+      return "";
+    },
+    []
   );
 
   /** Makes the account and the first vault together, from one password. */
@@ -702,6 +784,7 @@ export default function VaultProvider({
       setStayUnlocked,
       signInWithPassword,
       registerWithPassword,
+      migrateWithPassphrase,
     }),
     [
       restoreFromFile,
@@ -731,6 +814,7 @@ export default function VaultProvider({
       setStayUnlocked,
       signInWithPassword,
       registerWithPassword,
+      migrateWithPassphrase,
     ]
   );
 
