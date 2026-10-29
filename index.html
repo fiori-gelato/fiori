@@ -9,9 +9,9 @@
 <meta property="og:description" content="Small-batch gelato, churned by hand in Cape Town.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://fiori-gelato.co.za/">
-<meta property="og:image" content="https://fiori-gelato.co.za/assets/og-blue.png">
+<meta property="og:image" content="https://fiori-gelato.co.za/assets/og-fiori.png">
 <meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="860">
+<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
@@ -73,7 +73,7 @@ a{color:inherit}
 
 /* ---------- opening screen: terracota logo pulsing on white ---------- */
 .intro{position:fixed;inset:0;z-index:100;background-color:var(--white);display:grid;place-items:center;cursor:pointer;animation:introFailsafe 1.6s ease 7s forwards}
-.intro img{width:min(62vw,300px);height:auto;animation:pulse 1.8s ease-in-out infinite;transform-origin:50% 50%;will-change:transform}
+.intro img{width:min(72vw,360px);height:auto;animation:pulse 1.8s ease-in-out infinite;transform-origin:50% 50%;will-change:transform}
 @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:.75}}
 .intro.leave{background-color:rgba(255,255,255,0);transition:background-color 1.8s ease .3s;pointer-events:none}
 @keyframes introFailsafe{to{opacity:0;visibility:hidden}}
@@ -84,7 +84,7 @@ body.enter .hero > *{animation:rise 1.8s cubic-bezier(.2,.8,.2,1) backwards;anim
 
 /* ---------- header: the logo, large and centred ---------- */
 .top{display:flex;justify-content:center;padding-block:28px 0}
-.top img{width:min(78vw,440px);height:auto}
+.top img{width:min(78vw,500px);height:auto}
 
 /* ---------- hero: COMING SOON drifting along a gentle wave, the Fiori stamp between ---------- */
 .hero{padding-block:var(--space-3) var(--space-3);overflow:hidden}
@@ -157,10 +157,10 @@ body.enter .hero > *{animation:rise 1.8s cubic-bezier(.2,.8,.2,1) backwards;anim
 </head>
 <body>
 <div class="intro" id="intro" aria-hidden="true">
-  <img src="assets/logo-blue.svg" alt="">
+  <img src="assets/logo-new-blue.svg" alt="">
 </div>
 
-<header class="top"><img id="topLogo" src="assets/logo-blue.svg" alt="Fiori Gelato"></header>
+<header class="top"><img id="topLogo" src="assets/logo-new-blue.svg" alt="Fiori Gelato"></header>
 
 <main>
   <section class="hero">
@@ -286,7 +286,7 @@ body.enter .hero > *{animation:rise 1.8s cubic-bezier(.2,.8,.2,1) backwards;anim
     var svg = document.getElementById("wave");
     if (!svg) return;
     var NS = "http://www.w3.org/2000/svg", XL = "http://www.w3.org/1999/xlink";
-    var STAMP = "assets/stamp-blue.svg", WORD = "COMING SOON";
+    var STAMP = "assets/protea-blue.svg", WORD = "COMING SOON";
     var H = 170, W = 0, unitLen = 0, wordLen = 0, gap = 0, stampSize = 0, capMid = 0, pathLen = 0;
     var x = 0, last = performance.now(), path = null, words = [], stamps = [];
     function el(tag, attrs){ var n = document.createElementNS(NS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); return n; }
@@ -296,7 +296,7 @@ body.enter .hero > *{animation:rise 1.8s cubic-bezier(.2,.8,.2,1) backwards;anim
       var amp = Math.min(22, W * 0.04), wl = Math.max(420, W * 0.9);
       svg.setAttribute("viewBox", "0 0 " + W + " " + H);
       while (svg.firstChild) svg.removeChild(svg.firstChild);
-      stampSize = fs * 0.6; capMid = fs * 0.36; gap = fs * 1.1;
+      stampSize = fs * 0.78; capMid = fs * 0.36; gap = fs * 1.2;
       // measure the word exactly as it is drawn
       var probe = el("text", {"font-size":fs, x:0, y:-400}); probe.textContent = WORD; svg.appendChild(probe);
       wordLen = probe.getComputedTextLength() || fs * 6.4;
