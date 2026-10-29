@@ -286,9 +286,11 @@ body.enter .hero > *{animation:rise 1.8s cubic-bezier(.2,.8,.2,1) backwards;anim
     var svg = document.getElementById("wave");
     if (!svg) return;
     var NS = "http://www.w3.org/2000/svg", XL = "http://www.w3.org/1999/xlink";
-    var STAMP = "assets/protea-blue.svg", WORD = "COMING SOON";
+    var STAMP = "assets/dot-blue.svg", WORD = "COMING SOON";
     var H = 170, W = 0, unitLen = 0, wordLen = 0, gap = 0, stampSize = 0, capMid = 0, pathLen = 0;
-    var x = 0, last = performance.now(), path = null, words = [], stamps = [];
+    var x = 0, last = performance.now(), path = null, words = [], stamps = [], cycle = 0, spin = {};
+    // each protea gets its own random turn, and a new one every time it comes round again
+    function turn(id){ if (!(id in spin)) spin[id] = Math.random() * 360; return spin[id]; }
     function el(tag, attrs){ var n = document.createElementNS(NS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); return n; }
     function build(){
       W = Math.max(320, svg.clientWidth || window.innerWidth);
@@ -296,7 +298,7 @@ body.enter .hero > *{animation:rise 1.8s cubic-bezier(.2,.8,.2,1) backwards;anim
       var amp = Math.min(22, W * 0.04), wl = Math.max(420, W * 0.9);
       svg.setAttribute("viewBox", "0 0 " + W + " " + H);
       while (svg.firstChild) svg.removeChild(svg.firstChild);
-      stampSize = fs * 0.78; capMid = fs * 0.36; gap = fs * 1.2;
+      stampSize = fs * 0.3; capMid = fs * 0.36; gap = fs * 0.9;
       // measure the word exactly as it is drawn
       var probe = el("text", {"font-size":fs, x:0, y:-400}); probe.textContent = WORD; svg.appendChild(probe);
       wordLen = probe.getComputedTextLength() || fs * 6.4;
@@ -332,13 +334,13 @@ body.enter .hero > *{animation:rise 1.8s cubic-bezier(.2,.8,.2,1) backwards;anim
         var ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
         im.setAttribute("visibility", "visible");
         // centre the stamp on the middle of the capital letters
-        im.setAttribute("transform", "translate(" + p.x.toFixed(2) + " " + p.y.toFixed(2) + ") rotate(" + ang.toFixed(2) + ") translate(" + (-half).toFixed(2) + " " + (-half - capMid).toFixed(2) + ")");
+        im.setAttribute("transform", "translate(" + p.x.toFixed(2) + " " + p.y.toFixed(2) + ") rotate(" + ang.toFixed(2) + ") translate(0 " + (-capMid).toFixed(2) + ") rotate(" + turn(k + cycle).toFixed(1) + ") translate(" + (-half).toFixed(2) + " " + (-half).toFixed(2) + ")");
       }
     }
     function step(now){
       var dt = Math.min(.05, (now - last) / 1000); last = now;
       x -= 55 * dt;
-      if (unitLen && -x >= unitLen) x += unitLen;
+      if (unitLen && -x >= unitLen){ x += unitLen; delete spin[cycle]; cycle++; }
       place();
       requestAnimationFrame(step);
     }
