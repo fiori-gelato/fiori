@@ -77,7 +77,7 @@ export default function Nav() {
       <div className="nav-inner">
         <a className="nav-logo" href="#top" aria-label="Fiori — back to top">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={asset("/brand/logo/fiori-wordmark-deepblue.svg")} alt="Fiori Gelato" />
+          <img src={asset("/brand/logo/fiori-deepblue.svg")} alt="Fiori Gelato" />
         </a>
         <div className="nav-links" id="navLinks" onClick={() => setOpen(false)}>
           {links.map((l) => (

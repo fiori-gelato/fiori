@@ -44,7 +44,7 @@ export default function Intro() {
   return (
     <div className={`intro${done ? " is-done" : ""}`} aria-hidden="true">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={asset("/brand/logo/fiori-complete-latte.png")} alt="" />
+      <img src={asset("/brand/logo/fiori-gelato-latte.svg")} alt="" />
     </div>
   );
 }

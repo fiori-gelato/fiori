@@ -15,7 +15,7 @@ export default function Closing() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className="mark reveal"
-          src={asset("/brand/logo/fiori-complete-latte.png")}
+          src={asset("/brand/logo/fiori-gelato-latte.svg")}
           alt="Fiori Gelato"
         />
         <h2 className="reveal" style={{ "--d": "120ms" } as CSSProperties}>

@@ -12,7 +12,7 @@ export default function Footer() {
       />
       <div className="footer-inner">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={asset("/brand/logo/fiori-complete-latte.png")} alt="Fiori Gelato" />
+        <img src={asset("/brand/logo/fiori-gelato-latte.svg")} alt="Fiori Gelato" />
         <span>
           Gelato made in small batches<span className="dots"> •</span> Investor
           information pack, July 2026

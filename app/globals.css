@@ -344,7 +344,7 @@ section { position: relative; }
 .concept-card .swatch {
   position: absolute; top: -18px; right: -16px;
   width: 92px; height: 92px;
-  background: var(--mark-f) no-repeat center / contain;
+  background: var(--mark-protea) no-repeat center / contain;
   opacity: 0.08;
   pointer-events: none;
 }

@@ -163,7 +163,11 @@
   padding: 4px 10px 18px;
 }
 .os-brand img { height: 22px; width: auto; }
-[data-os-theme="dark"] .os-brand img { filter: invert(1) brightness(1.6); }
+/* Never recoloured: the Deep Blue file on the light ground, the Latte file
+   on the dark one. */
+.os-brand .os-on-dark { display: none; }
+[data-os-theme="dark"] .os-brand .os-on-light { display: none; }
+[data-os-theme="dark"] .os-brand .os-on-dark { display: block; }
 .os-brand span { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--os-muted); font-weight: 600; }
 
 .os-nav-item {

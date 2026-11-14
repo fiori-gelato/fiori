@@ -142,8 +142,22 @@ export default function Shell() {
       {menuOpen && <div className="os-scrim" onClick={() => setMenuOpen(false)} />}
       <aside className={`os-side${menuOpen ? " is-open" : ""}`}>
         <div className="os-brand">
+          {/* The logo is a single-ink drawing and the brand supplies one file
+              per colour, so rather than filtering it for dark mode both files
+              are here and CSS shows the one the ground calls for. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={asset("/brand/logo/fiori-wordmark-deepblue.svg")} alt="Fiori Gelato" />
+          <img
+            className="os-on-light"
+            src={asset("/brand/logo/fiori-deepblue.svg")}
+            alt="Fiori Gelato"
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="os-on-dark"
+            src={asset("/brand/logo/fiori-latte.svg")}
+            alt=""
+            aria-hidden="true"
+          />
           <span>OS</span>
         </div>
         {NAV.map((n) => (

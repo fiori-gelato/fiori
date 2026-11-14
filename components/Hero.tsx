@@ -45,7 +45,7 @@ export default function Hero() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className="hero-mark"
-          src={asset("/brand/logo/fiori-complete-latte.png")}
+          src={asset("/brand/logo/fiori-gelato-latte.svg")}
           alt="Fiori Gelato"
           data-stage="2"
         />

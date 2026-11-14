@@ -103,7 +103,7 @@ export default function Lock() {
     <div className="os-lock">
       <div className={`os-lock-card${error ? " os-shake" : ""}`} key={error}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={asset("/brand/logo/fiori-complete-deepblue.svg")} alt="Fiori Gelato" />
+        <img src={asset("/brand/logo/fiori-deepblue.svg")} alt="Fiori Gelato" />
         <h1>
           {mode === "restore"
             ? "Open a backup"

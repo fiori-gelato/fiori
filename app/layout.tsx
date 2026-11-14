@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: "Fiori Gelato — Investor information pack",
   description:
     "Fiori Gelato — investor information pack, Cape Town, July 2026. Establishing a premium gelato brand at reduced risk, before scaling.",
-  icons: { icon: asset("/brand/mark/f-oval-deepblue.svg") },
+  icons: { icon: asset("/brand/protea/protea-tile-deepblue.svg") },
   /* Private document: the figures in it are not for a search result. */
   robots: {
     index: false,
@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 };
 
 /**
- * The brand's faces and its f mark, declared here rather than in the
+ * The brand's faces and its protea, declared here rather than in the
  * stylesheet.
  *
  * They are served from this site's own public folder, so their URLs carry the
@@ -60,7 +60,7 @@ const brandFaces = `
   font-style: italic;
   font-display: swap;
 }
-:root { --mark-f: url('${asset("/brand/mark/f-deepblue.svg")}'); }
+:root { --mark-protea: url('${asset("/brand/protea/protea-deepblue.svg")}'); }
 `;
 
 export default function RootLayout({
