@@ -10,7 +10,7 @@
  * Supabase and Google are never cached — sync must always see the truth.
  */
 
-const VERSION = "fiori-os-v3";
+const VERSION = "fiori-os-v4";
 
 /* This file is served at <base>/sw.js, so the base path is whatever is left
    when its own name is taken off. That keeps the worker correct whether the
