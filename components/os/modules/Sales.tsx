@@ -7,6 +7,9 @@ import { Bars, Card, Chip, Empty, Field, Modal, SectionTitle } from "../ui";
 import { postSale, unpostSale } from "@/lib/os/actions";
 import {
   bestSellers,
+  saleLineLabel,
+  packagingCost,
+  servingCost,
   customerTotals,
   financials,
   salesByChannel,
@@ -60,7 +63,7 @@ export default function Sales() {
             s.date,
             CHANNEL_LABEL[s.channel],
             v.customers.find((c) => c.id === s.customerId)?.name ?? "",
-            v.inventory.find((i) => i.id === l.itemId)?.name ?? "",
+            saleLineLabel(v, l),
             l.qty,
             l.unitPrice.toFixed(2),
             l.unitCost.toFixed(2),
@@ -182,7 +185,7 @@ export default function Sales() {
                           {s.lines
                             .map(
                               (l) =>
-                                `${vault.inventory.find((i) => i.id === l.itemId)?.name ?? "?"} ×${l.qty}`
+                                `${saleLineLabel(vault, l)} ×${l.qty}`
                             )
                             .join(", ")}
                         </td>
@@ -348,27 +351,42 @@ function SaleForm({ onClose }: { onClose: () => void }) {
   if (!vault) return null;
 
   const finished = vault.inventory.filter((i) => i.category === "finished" && !i.archived);
+  const flavours = vault.recipes.filter((r) => r.stage !== "archived");
+  const packs = vault.packaging.filter((p) => !p.archived);
 
   function addLine() {
-    const item = finished[0];
-    if (!item) return;
-    const recipe = vault!.recipes.find((r) => r.outputItemId === item.id);
     setLines([
       ...lines,
       {
-        itemId: item.id,
+        recipeId: flavours[0]?.id,
+        packagingId: packs[0]?.id,
         qty: 1,
-        unitPrice: recipe?.sellingPrice ?? 0,
-        unitCost: item.unitCost,
+        unitPrice: 0,
+        unitCost: 0,
+        fromStock: false,
       },
     ]);
   }
 
+  /* A line's cost follows the flavour and the packaging, so it is worked out
+     rather than stored while the form is open. */
+  function priced(l: SaleLine): SaleLine {
+    if (l.fromStock && l.itemId) {
+      const item = vault!.inventory.find((i) => i.id === l.itemId);
+      const pack = l.packagingId ? packagingCost(vault!, vault!.packaging.find((p) => p.id === l.packagingId)!) : 0;
+      return { ...l, unitCost: (item?.unitCost ?? 0) + pack };
+    }
+    return { ...l, unitCost: servingCost(vault!, l.recipeId, l.packagingId).total };
+  }
+
   const revenue = lines.reduce((a, l) => a + l.qty * l.unitPrice, 0);
-  const cost = lines.reduce((a, l) => a + l.qty * l.unitCost, 0);
+
+  const cost = lines.reduce((a, l) => a + l.qty * priced(l).unitCost, 0);
 
   function save() {
-    const clean = lines.filter((l) => l.itemId && l.qty > 0);
+    const clean = lines
+      .filter((l) => l.qty > 0 && (l.recipeId || l.itemId || l.description?.trim()))
+      .map(priced);
     if (!clean.length) return;
     const sale = {
       id: uid("sal_"),
@@ -402,13 +420,7 @@ function SaleForm({ onClose }: { onClose: () => void }) {
         </>
       }
     >
-      {!finished.length ? (
-        <p className="os-muted">
-          There is no finished stock to sell yet. Log a production run first, or add
-          a finished-stock item in Inventory.
-        </p>
-      ) : (
-        <>
+      <>
           <div className="os-row">
             <Field label="Date">
               <input
@@ -469,69 +481,167 @@ function SaleForm({ onClose }: { onClose: () => void }) {
             </Field>
           </div>
 
-          <SectionTitle>Lines</SectionTitle>
+          <SectionTitle>What was sold</SectionTitle>
+          {!packs.length && (
+            <p className="os-small" style={{ color: "var(--os-caramel)" }}>
+              No packaging set up yet. Add a format under Inventory → Packaging
+              and its cost will carry into every sale. You can still record
+              sales without it.
+            </p>
+          )}
           {lines.map((l, idx) => {
-            const item = vault.inventory.find((i) => i.id === l.itemId);
+            const edit = (fn: (x: SaleLine) => SaleLine) =>
+              setLines(lines.map((x, i) => (i === idx ? fn(x) : x)));
+            const shown = priced(l);
+            const split = servingCost(vault, l.recipeId, l.packagingId);
+            const item = l.itemId ? vault.inventory.find((i) => i.id === l.itemId) : undefined;
+            const profit = (shown.unitPrice - shown.unitCost) * shown.qty;
             return (
-              <div className="os-row" key={idx}>
-                <select
-                  className="os-select"
-                  value={l.itemId}
-                  onChange={(e) => {
-                    const it = vault.inventory.find((i) => i.id === e.target.value);
-                    setLines(
-                      lines.map((x, i) =>
-                        i === idx
-                          ? { ...x, itemId: e.target.value, unitCost: it?.unitCost ?? 0 }
-                          : x
-                      )
-                    );
-                  }}
-                >
-                  {finished.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name} ({i.stock} in stock)
-                    </option>
-                  ))}
-                </select>
-                <input
-                  className="os-input"
-                  type="number"
-                  value={l.qty}
-                  onChange={(e) =>
-                    setLines(lines.map((x, i) => (i === idx ? { ...x, qty: Number(e.target.value) } : x)))
-                  }
-                />
-                <input
-                  className="os-input"
-                  type="number"
-                  value={l.unitPrice}
-                  onChange={(e) =>
-                    setLines(
-                      lines.map((x, i) => (i === idx ? { ...x, unitPrice: Number(e.target.value) } : x))
-                    )
-                  }
-                />
-                <span className="os-shrink os-small os-muted" style={{ minWidth: 78 }}>
-                  cost {ZAR(l.unitCost, 2)}
-                </span>
-                <button
-                  className="os-btn os-btn--ghost os-btn--sm os-shrink"
-                  onClick={() => setLines(lines.filter((_, i) => i !== idx))}
-                  aria-label="Remove line"
-                >
-                  <Trash2 size={13} />
-                </button>
-                {item && l.qty > item.stock && (
-                  <span className="os-small" style={{ color: "var(--os-danger)" }}>
-                    only {item.stock} in stock
+              <Card key={idx} style={{ marginBottom: 10 }}>
+                <div className="os-row">
+                  <Field label="Flavour">
+                    <select
+                      className="os-select"
+                      value={l.recipeId ?? ""}
+                      onChange={(e) =>
+                        edit((x) => ({
+                          ...x,
+                          recipeId: e.target.value || undefined,
+                          description: e.target.value ? undefined : x.description,
+                        }))
+                      }
+                    >
+                      <option value="">— type it in myself —</option>
+                      {flavours.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  {!l.recipeId && (
+                    <Field label="Called">
+                      <input
+                        className="os-input"
+                        value={l.description ?? ""}
+                        placeholder="Cherry &amp; dark chocolate"
+                        onChange={(e) => edit((x) => ({ ...x, description: e.target.value }))}
+                      />
+                    </Field>
+                  )}
+                  <Field label="Packaging">
+                    <select
+                      className="os-select"
+                      value={l.packagingId ?? ""}
+                      onChange={(e) =>
+                        edit((x) => ({ ...x, packagingId: e.target.value || undefined }))
+                      }
+                    >
+                      <option value="">—</option>
+                      {packs.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({p.volumeMl}ml)
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+
+                <div className="os-row">
+                  <Field label="How many">
+                    <input
+                      className="os-input"
+                      type="number"
+                      value={l.qty}
+                      onChange={(e) => edit((x) => ({ ...x, qty: Number(e.target.value) }))}
+                    />
+                  </Field>
+                  <Field label="Sold at, each">
+                    <input
+                      className="os-input"
+                      type="number"
+                      step="any"
+                      value={l.unitPrice}
+                      onChange={(e) => edit((x) => ({ ...x, unitPrice: Number(e.target.value) }))}
+                    />
+                  </Field>
+                  <span className="os-shrink">
+                    <button
+                      className="os-btn os-btn--ghost os-btn--sm"
+                      onClick={() => setLines(lines.filter((_, i) => i !== idx))}
+                      aria-label="Remove line"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </span>
+                </div>
+
+                <label className="os-check" style={{ marginBottom: 8 }}>
+                  <input
+                    type="checkbox"
+                    checked={!!l.fromStock}
+                    onChange={(e) =>
+                      edit((x) => ({
+                        ...x,
+                        fromStock: e.target.checked,
+                        itemId: e.target.checked ? (x.itemId ?? finished[0]?.id) : x.itemId,
+                      }))
+                    }
+                  />
+                  <span>
+                    Take this out of the freezer
+                    <span className="os-small os-muted">
+                      {" "}
+                      — leave it off if you made this fresh for the order.
+                    </span>
+                  </span>
+                </label>
+
+                {l.fromStock && (
+                  <Field label="Which stock">
+                    <select
+                      className="os-select"
+                      value={l.itemId ?? ""}
+                      onChange={(e) => edit((x) => ({ ...x, itemId: e.target.value || undefined }))}
+                    >
+                      <option value="">—</option>
+                      {finished.map((i) => (
+                        <option key={i.id} value={i.id}>
+                          {i.name} ({i.stock} in stock)
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
                 )}
-              </div>
+
+                <div className="os-split">
+                  <span>
+                    Gelato <strong>{ZAR(l.fromStock && item ? item.unitCost : split.gelato, 2)}</strong>
+                  </span>
+                  <span>
+                    Packaging <strong>{ZAR(split.packaging, 2)}</strong>
+                  </span>
+                  <span>
+                    Cost each <strong>{ZAR(shown.unitCost, 2)}</strong>
+                  </span>
+                  <span>
+                    Gross profit{" "}
+                    <strong style={{ color: profit >= 0 ? "var(--os-accent)" : "var(--os-danger)" }}>
+                      {ZAR(profit, 2)}
+                    </strong>
+                  </span>
+                </div>
+                {l.fromStock && item && l.qty > item.stock && (
+                  <p className="os-small" style={{ color: "var(--os-caramel)", margin: "6px 0 0" }}>
+                    Only {item.stock} in stock — recorded anyway, and stock will
+                    go to zero rather than negative.
+                  </p>
+                )}
+              </Card>
             );
           })}
           <button className="os-btn os-btn--ghost os-btn--sm" onClick={addLine}>
-            <Plus size={13} /> Add line
+            <Plus size={13} /> Add another
           </button>
 
           <Card style={{ marginTop: 14 }}>
@@ -552,8 +662,7 @@ function SaleForm({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           </Card>
-        </>
-      )}
+      </>
     </Modal>
   );
 }

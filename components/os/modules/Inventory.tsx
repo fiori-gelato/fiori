@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Packaging from "./Packaging";
 import {
   Download,
   History,
@@ -49,7 +50,9 @@ const UNITS: Unit[] = ["g", "kg", "ml", "L", "unit"];
 
 export default function Inventory() {
   const { vault, update } = useVault();
-  const [tab, setTab] = useState<"stock" | "purchases" | "suppliers">("stock");
+  const [tab, setTab] = useState<"stock" | "purchases" | "packaging" | "suppliers">(
+    "stock"
+  );
   const [buying, setBuying] = useState(false);
   const [editing, setEditing] = useState<Purchase | null>(null);
   const [using, setUsing] = useState<string | null>(null);
@@ -97,14 +100,20 @@ export default function Inventory() {
     <div className="os-stack">
       <div className="os-flex">
         <div className="os-stages">
-          {(["stock", "purchases", "suppliers"] as const).map((t) => (
+          {(["stock", "purchases", "packaging", "suppliers"] as const).map((t) => (
             <button
               key={t}
               className="os-stage-pip"
               aria-pressed={tab === t}
               onClick={() => setTab(t)}
             >
-              {t === "stock" ? "Stock" : t === "purchases" ? "Purchases" : "Suppliers"}
+              {t === "stock"
+                ? "Stock"
+                : t === "purchases"
+                  ? "Purchases"
+                  : t === "packaging"
+                    ? "Packaging"
+                    : "Suppliers"}
             </button>
           ))}
         </div>
@@ -358,6 +367,8 @@ export default function Inventory() {
           )}
         </>
       )}
+
+      {tab === "packaging" && <Packaging />}
 
       {tab === "suppliers" && (
         <>

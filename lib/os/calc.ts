@@ -11,7 +11,9 @@ import type {
   ExpenseCategory,
   Funding,
   InventoryItem,
+  PackagingType,
   Recipe,
+  SaleLine,
   SalesChannel,
   Vault,
 } from "./types";
@@ -276,6 +278,47 @@ export function ownerCapital(v: Vault): number {
 }
 
 /* ------------------------------------------------------------------ */
+/* Packaging                                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * What one unit of a packaging type costs to put together.
+ *
+ * A part that points at a stocked item is priced from that item, so the cup
+ * price follows what was actually paid for cups; anything else carries its
+ * own figure.
+ */
+export function packagingCost(v: Vault, pkg: PackagingType): number {
+  return pkg.components.reduce((total, c) => {
+    const stocked = c.itemId ? v.inventory.find((i) => i.id === c.itemId) : undefined;
+    const each = stocked ? stocked.unitCost : c.unitCost;
+    return total + (c.qty || 0) * (each || 0);
+  }, 0);
+}
+
+/**
+ * What one serving costs: the gelato for the volume the packaging holds,
+ * plus the packaging itself.
+ *
+ * Either half can be missing — a flavour with no costed recipe yet, or a
+ * sale with no packaging chosen — and the total is simply what is known.
+ */
+export function servingCost(
+  v: Vault,
+  recipeId: string | undefined,
+  packagingId: string | undefined
+): { gelato: number; packaging: number; total: number } {
+  const pkg = packagingId ? v.packaging.find((p) => p.id === packagingId) : undefined;
+  const packaging = pkg ? packagingCost(v, pkg) : 0;
+
+  const recipe = recipeId ? v.recipes.find((r) => r.id === recipeId) : undefined;
+  const litres = pkg ? (pkg.volumeMl || 0) / 1000 : 0;
+  const gelato = recipe ? recipeCost(v, recipe).costPerLitre * litres : 0;
+
+  return { gelato, packaging, total: gelato + packaging };
+}
+
+/* ------------------------------------------------------------------ */
 /* Sales                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -307,23 +350,37 @@ export function salesByChannel(v: Vault, month?: string) {
   return [...out.entries()].sort((a, b) => b[1].revenue - a[1].revenue);
 }
 
+/** What a line was, in words — however it was recorded. */
+export function saleLineLabel(v: Vault, l: SaleLine): string {
+  if (l.recipeId) {
+    const r = v.recipes.find((x) => x.id === l.recipeId);
+    if (r) return r.name;
+  }
+  if (l.itemId) {
+    const i = v.inventory.find((x) => x.id === l.itemId);
+    if (i) return i.name;
+  }
+  return l.description?.trim() || "—";
+}
+
+/**
+ * Grouped by what was sold rather than by stock item, since a sale may be a
+ * flavour made fresh for an order and never have been a stock item at all.
+ */
 export function bestSellers(v: Vault, limit = 5) {
   const out = new Map<string, { qty: number; revenue: number }>();
   for (const s of v.sales) {
     for (const l of s.lines) {
-      const prev = out.get(l.itemId) ?? { qty: 0, revenue: 0 };
-      out.set(l.itemId, {
+      const name = saleLineLabel(v, l);
+      const prev = out.get(name) ?? { qty: 0, revenue: 0 };
+      out.set(name, {
         qty: prev.qty + l.qty,
         revenue: prev.revenue + l.qty * l.unitPrice,
       });
     }
   }
   return [...out.entries()]
-    .map(([itemId, t]) => ({
-      itemId,
-      name: v.inventory.find((i) => i.id === itemId)?.name ?? "—",
-      ...t,
-    }))
+    .map(([name, t]) => ({ itemId: name, name, ...t }))
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, limit);
 }

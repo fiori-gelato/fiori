@@ -119,10 +119,17 @@ export function unpostProduction(v: Vault, batch: ProductionBatch) {
   batch.posted = false;
 }
 
-/** Selling draws finished goods down; revenue is derived from the lines. */
+/**
+ * Records a sale. Stock moves only for the lines that say it should.
+ *
+ * A sale is not tied to the freezer: an order can be made fresh for it, in
+ * which case the ingredients leave stock through the production run, not
+ * here. Only a line marked `fromStock` and pointing at an item draws down.
+ */
 export function postSale(v: Vault, sale: Sale) {
   if (sale.posted) return;
   for (const line of sale.lines) {
+    if (!line.fromStock || !line.itemId) continue;
     const item = v.inventory.find((i) => i.id === line.itemId);
     if (item) item.stock = Math.max(0, item.stock - line.qty);
   }
@@ -132,6 +139,7 @@ export function postSale(v: Vault, sale: Sale) {
 export function unpostSale(v: Vault, sale: Sale) {
   if (!sale.posted) return;
   for (const line of sale.lines) {
+    if (!line.fromStock || !line.itemId) continue;
     const item = v.inventory.find((i) => i.id === line.itemId);
     if (item) item.stock += line.qty;
   }

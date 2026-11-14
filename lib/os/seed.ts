@@ -118,6 +118,7 @@ export function seedVault(): Vault {
     inventory: [base, tub500, cup175, finished500],
     purchases: [],
     recipes: [recipe],
+    packaging: [],
     production: [],
     sales: [],
     customers: [],

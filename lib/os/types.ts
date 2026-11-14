@@ -189,11 +189,60 @@ export type SalesChannel =
   | "platform"
   | "wholesale";
 
+/**
+ * One part of a packaging type — the cup, the lid, the sticker, the spoon.
+ *
+ * It can point at a stocked item so its cost follows the purchase price, or
+ * carry its own cost when it is something bought ad hoc and never counted.
+ */
+export interface PackagingComponent {
+  id: ID;
+  /** Set when the part is a stocked item; its cost then follows purchases. */
+  itemId?: ID;
+  name: string;
+  /** How many of this part go into one unit of packaging. */
+  qty: number;
+  /** Cost of one, used when the part is not a stocked item. */
+  unitCost: number;
+}
+
+/**
+ * A way of selling the gelato: a 120ml cup with its lid, sticker and spoon.
+ *
+ * The format is not settled early on, so these are made up as they are tried
+ * and locked once a price is being quoted off one. Locking does not freeze
+ * the costs — purchases still move them — it stops the parts being edited by
+ * accident once sales are referring to it.
+ */
+export interface PackagingType {
+  id: ID;
+  name: string;
+  /** Gelato it holds, in millilitres, for working out the scoop's cost. */
+  volumeMl: number;
+  components: PackagingComponent[];
+  locked?: boolean;
+  archived?: boolean;
+  notes?: string;
+}
+
 export interface SaleLine {
-  itemId: ID;
+  /**
+   * The finished-stock item, when the sale is drawn from the freezer. Sales
+   * are not tied to stock: a batch can be made fresh for an order, so this
+   * and `fromStock` are both optional.
+   */
+  itemId?: ID;
+  /** Whether this line moves stock. */
+  fromStock?: boolean;
+  /** The flavour sold, when it came off a recipe rather than stock. */
+  recipeId?: ID;
+  /** What was sold, in words, when it is neither. */
+  description?: string;
+  /** The packaging it went out in, which carries part of the cost. */
+  packagingId?: ID;
   qty: number;
   unitPrice: number;
-  /** Cost per unit captured at the time of sale. */
+  /** Cost per unit captured at the time of sale: gelato plus packaging. */
   unitCost: number;
 }
 
@@ -406,6 +455,8 @@ export interface Vault {
   inventory: InventoryItem[];
   purchases: Purchase[];
   recipes: Recipe[];
+  /** Ways the gelato is sold: cup sizes, tubs, cones, with their parts. */
+  packaging: PackagingType[];
   production: ProductionBatch[];
   sales: Sale[];
   customers: Customer[];
