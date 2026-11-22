@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronRight,
   Download,
+  Pencil,
   Plus,
   Trash2,
   Users,
@@ -25,6 +26,7 @@ import { ZAR, dateLabel, download, pct, toCSV, today, uid } from "@/lib/os/forma
 import {
   CHANNEL_LABEL,
   type CustomerType,
+  type Sale,
   type SaleLine,
   type SalesChannel,
 } from "@/lib/os/types";
@@ -51,6 +53,8 @@ export default function Sales() {
   const { vault, update } = useVault();
   const [tab, setTab] = useState<"sales" | "customers">("sales");
   const [selling, setSelling] = useState(false);
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   if (!vault) return null;
   /* Narrowing doesn't reach into the callbacks below, so bind it once. */
   const v = vault;
@@ -200,19 +204,45 @@ export default function Sales() {
                         <td className="os-num">{ZAR(rev - cost)}</td>
                         <td className="os-num">{ZAR(rev - cost - s.channelCost)}</td>
                         <td>
-                          <button
-                            className="os-btn os-btn--ghost os-btn--sm"
-                            onClick={() =>
-                              update((d) => {
-                                const t = d.sales.find((x) => x.id === s.id);
-                                if (t) unpostSale(d, t);
-                                d.sales = d.sales.filter((x) => x.id !== s.id);
-                              })
-                            }
-                            aria-label="Delete sale"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          <span className="os-flex">
+                            <button
+                              className="os-btn os-btn--ghost os-btn--sm"
+                              onClick={() => setEditingSale(s)}
+                            >
+                              <Pencil size={13} /> Edit
+                            </button>
+                            {confirmDelete === s.id ? (
+                              <>
+                                <button
+                                  className="os-btn os-btn--ghost os-btn--sm"
+                                  onClick={() => setConfirmDelete(null)}
+                                >
+                                  Keep
+                                </button>
+                                <button
+                                  className="os-btn os-btn--danger os-btn--sm"
+                                  onClick={() => {
+                                    update((d) => {
+                                      const t = d.sales.find((x) => x.id === s.id);
+                                      if (t) unpostSale(d, t);
+                                      d.sales = d.sales.filter((x) => x.id !== s.id);
+                                    });
+                                    setConfirmDelete(null);
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                className="os-btn os-btn--ghost os-btn--sm"
+                                onClick={() => setConfirmDelete(s.id)}
+                                aria-label="Delete sale"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </span>
                         </td>
                       </tr>
                     );
@@ -343,6 +373,13 @@ export default function Sales() {
       )}
 
       {selling && <SaleForm onClose={() => setSelling(false)} />}
+      {editingSale && (
+        <SaleForm
+          key={editingSale.id}
+          sale={editingSale}
+          onClose={() => setEditingSale(null)}
+        />
+      )}
     </div>
   );
 }
@@ -358,25 +395,50 @@ interface Draft extends SaleLine {
   ownCost?: number;
 }
 
-function SaleForm({ onClose }: { onClose: () => void }) {
+function SaleForm({ sale, onClose }: { sale?: Sale; onClose: () => void }) {
   const { vault, update } = useVault();
-  const [date, setDate] = useState(today());
-  const [channel, setChannel] = useState<SalesChannel>("direct");
-  const [customerId, setCustomerId] = useState("");
-  const [channelCost, setChannelCost] = useState(0);
-  const [payment, setPayment] = useState<"cash" | "card" | "eft" | "platform">("cash");
-  const [details, setDetails] = useState(false);
+  const editing = !!sale;
+  const [date, setDate] = useState(sale?.date ?? today());
+  const [channel, setChannel] = useState<SalesChannel>(sale?.channel ?? "direct");
+  const [customerId, setCustomerId] = useState(sale?.customerId ?? "");
+  const [channelCost, setChannelCost] = useState(sale?.channelCost ?? 0);
+  const [payment, setPayment] = useState<"cash" | "card" | "eft" | "platform">(
+    sale?.paymentMethod ?? "cash"
+  );
+  /* An edit opens with the rest already showing, since whatever is in there
+     is part of what is being changed. */
+  const [details, setDetails] = useState(editing);
   const flavourListId = useId();
-  /* The form opens with one empty line ready, so a sale is four fields and
-     a save rather than a click to begin. */
-  const [lines, setLines] = useState<Draft[]>(() => [
-    {
-      packagingId: vault?.packaging.find((p) => !p.archived)?.id,
-      qty: 1,
-      unitPrice: 0,
-      unitCost: 0,
-    },
-  ]);
+  /* A new sale opens with one empty line ready, so it is four fields and a
+     save rather than a click to begin. An edit opens with its own lines.
+     Each kept its cost from the day it was sold: where that still matches
+     what the recipe and packaging work out to, it is left to follow them,
+     and where it doesn't it is held as it was rather than quietly restated
+     at today's prices. */
+  const [lines, setLines] = useState<Draft[]>(() => {
+    if (!sale) {
+      return [
+        {
+          packagingId: vault?.packaging.find((p) => !p.archived)?.id,
+          qty: 1,
+          unitPrice: 0,
+          unitCost: 0,
+        },
+      ];
+    }
+    return sale.lines.map((l) => {
+      const worked = vault
+        ? l.fromStock && l.itemId
+          ? (vault.inventory.find((i) => i.id === l.itemId)?.unitCost ?? 0) +
+            (l.packagingId
+              ? packagingCost(vault, vault.packaging.find((p) => p.id === l.packagingId)!)
+              : 0)
+          : servingCost(vault, l.recipeId, l.packagingId).total
+        : l.unitCost;
+      const same = Math.abs(worked - l.unitCost) < 0.005;
+      return same ? { ...l } : { ...l, ownCost: l.unitCost };
+    });
+  });
   if (!vault) return null;
 
   const finished = vault.inventory.filter((i) => i.category === "finished" && !i.archived);
@@ -420,8 +482,8 @@ function SaleForm({ onClose }: { onClose: () => void }) {
 
   function save() {
     if (!filled.length) return;
-    const sale = {
-      id: uid("sal_"),
+    const next: Sale = {
+      id: sale?.id ?? uid("sal_"),
       date,
       channel,
       customerId: customerId || undefined,
@@ -434,15 +496,26 @@ function SaleForm({ onClose }: { onClose: () => void }) {
       paymentMethod: payment,
     };
     update((d) => {
-      d.sales.push(sale);
-      postSale(d, d.sales.find((x) => x.id === sale.id)!);
+      if (sale) {
+        /* Put back whatever the old version took out of the freezer before
+           the new one draws its own, so an edited quantity can't leave
+           stock short or over. */
+        const old = d.sales.find((x) => x.id === sale.id);
+        if (old) unpostSale(d, old);
+        d.sales = d.sales.map((x) =>
+          x.id === sale.id ? { ...next, posted: false } : x
+        );
+      } else {
+        d.sales.push(next);
+      }
+      postSale(d, d.sales.find((x) => x.id === next.id)!);
     });
     onClose();
   }
 
   return (
     <Modal
-      title="Record a sale"
+      title={editing ? "Edit this sale" : "Record a sale"}
       onClose={onClose}
       footer={
         <>
@@ -450,7 +523,7 @@ function SaleForm({ onClose }: { onClose: () => void }) {
             Cancel
           </button>
           <button className="os-btn" onClick={save} disabled={!filled.length}>
-            Save · {ZAR(revenue)}
+            {editing ? "Save changes" : "Save"} · {ZAR(revenue)}
           </button>
         </>
       }
