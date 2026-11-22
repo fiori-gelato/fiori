@@ -15,31 +15,21 @@ export default function Production() {
 
   const runs = [...vault.production].sort((a, b) => b.date.localeCompare(a.date));
   const thisMonth = runs.filter((r) => monthKey(r.date) === monthKey(today()));
-  const litres = runs.reduce((a, r) => a + r.litresProduced, 0);
-  const waste = runs.reduce((a, r) => a + r.wasteLitres, 0);
+  const kg = runs.reduce((a, r) => a + r.kgProduced, 0);
   const labour = runs.reduce((a, r) => a + r.labourMinutes, 0);
   const downtime = runs.reduce((a, r) => a + r.downtimeMinutes, 0);
 
   return (
     <div className="os-stack">
       <div className="os-flex">
-        <div className="os-grid os-grid--4" style={{ flex: 1 }}>
+        <div className="os-grid os-grid--3" style={{ flex: 1 }}>
           <Card>
-            <div className="os-stat-label">Litres produced</div>
+            <div className="os-stat-label">Produced</div>
             <div className="os-stat-value" style={{ fontSize: 23 }}>
-              {litres.toFixed(0)} L
+              {kg.toFixed(0)} kg
             </div>
             <div className="os-stat-sub">
-              {thisMonth.reduce((a, r) => a + r.litresProduced, 0).toFixed(0)} L this month
-            </div>
-          </Card>
-          <Card>
-            <div className="os-stat-label">Waste</div>
-            <div className="os-stat-value" style={{ fontSize: 23 }}>
-              {waste.toFixed(1)} L
-            </div>
-            <div className="os-stat-sub">
-              {litres ? ((waste / litres) * 100).toFixed(1) : "0"}% of output
+              {thisMonth.reduce((a, r) => a + r.kgProduced, 0).toFixed(0)} kg this month
             </div>
           </Card>
           <Card>
@@ -48,7 +38,7 @@ export default function Production() {
               {(labour / 60).toFixed(1)} h
             </div>
             <div className="os-stat-sub">
-              {litres ? (labour / 60 / litres).toFixed(2) : "0"} h per litre
+              {kg ? (labour / 60 / kg).toFixed(2) : "0"} h per kg
             </div>
           </Card>
           <Card>
@@ -76,9 +66,8 @@ export default function Production() {
                 <th>Date</th>
                 <th>Recipe</th>
                 <th className="os-num">Batches</th>
-                <th className="os-num">Litres</th>
+                <th className="os-num">Kg</th>
                 <th className="os-num">Units</th>
-                <th className="os-num">Waste</th>
                 <th className="os-num">Labour</th>
                 <th>Stock</th>
                 <th></th>
@@ -94,9 +83,8 @@ export default function Production() {
                       {recipe ? `${recipe.name} v${recipe.version}` : "—"}
                     </td>
                     <td className="os-num">{r.batches}</td>
-                    <td className="os-num">{r.litresProduced}</td>
+                    <td className="os-num">{r.kgProduced}</td>
                     <td className="os-num">{r.unitsProduced}</td>
-                    <td className="os-num">{r.wasteLitres}</td>
                     <td className="os-num">{r.labourMinutes} min</td>
                     <td>
                       <Chip tone={r.posted ? "accent" : undefined}>
@@ -147,7 +135,6 @@ function RunForm({ onClose }: { onClose: () => void }) {
   const [recipeId, setRecipeId] = useState(producible[0]?.id ?? "");
   const [date, setDate] = useState(today());
   const [batches, setBatches] = useState(1);
-  const [waste, setWaste] = useState(0);
   const [labour, setLabour] = useState(60);
   const [downtime, setDowntime] = useState(0);
   const [notes, setNotes] = useState("");
@@ -155,11 +142,8 @@ function RunForm({ onClose }: { onClose: () => void }) {
 
   const recipe = vault.recipes.find((r) => r.id === recipeId);
   const available = recipe ? batchesAvailable(vault, recipe) : 0;
-  const litres = (recipe?.yieldLitres ?? 0) * batches - waste;
-  const units = Math.max(
-    0,
-    Math.round((recipe?.outputUnits ?? 0) * batches * (waste && recipe?.yieldLitres ? 1 - waste / (recipe.yieldLitres * batches) : 1))
-  );
+  const kg = (recipe?.yieldKg ?? 0) * batches;
+  const units = Math.max(0, Math.round((recipe?.outputUnits ?? 0) * batches));
   const cost = recipe ? recipeCost(vault, recipe).totalCost * batches : 0;
   const short = recipe ? batches > available : false;
 
@@ -170,9 +154,8 @@ function RunForm({ onClose }: { onClose: () => void }) {
       date,
       recipeId,
       batches,
-      litresProduced: Math.max(0, litres),
+      kgProduced: Math.max(0, kg),
       unitsProduced: units,
-      wasteLitres: waste,
       labourMinutes: labour,
       downtimeMinutes: downtime,
       notes,
@@ -240,15 +223,6 @@ function RunForm({ onClose }: { onClose: () => void }) {
             </Field>
           </div>
           <div className="os-row">
-            <Field label="Waste (litres)">
-              <input
-                className="os-input"
-                type="number"
-                step="0.1"
-                value={waste}
-                onChange={(e) => setWaste(Number(e.target.value))}
-              />
-            </Field>
             <Field label="Labour (minutes)">
               <input
                 className="os-input"
@@ -279,9 +253,11 @@ function RunForm({ onClose }: { onClose: () => void }) {
               <div>
                 <div className="os-stat-label">Yields</div>
                 <div className="os-stat-value" style={{ fontSize: 20 }}>
-                  {Math.max(0, litres).toFixed(1)} L
+                  {Math.max(0, kg).toFixed(1)} kg
                 </div>
-                <div className="os-stat-sub">{units} units</div>
+                <div className="os-stat-sub">
+                  {units} {recipe?.unitType ?? "units"}
+                </div>
               </div>
               <div>
                 <div className="os-stat-label">Ingredient cost</div>
@@ -291,11 +267,11 @@ function RunForm({ onClose }: { onClose: () => void }) {
                 <div className="os-stat-sub">drawn from stock</div>
               </div>
               <div>
-                <div className="os-stat-label">Blast freeze</div>
+                <div className="os-stat-label">Cost each</div>
                 <div className="os-stat-value" style={{ fontSize: 20 }}>
-                  {((recipe?.blastFreezeMinutes ?? 0) / 60).toFixed(1)} h
+                  {ZAR(units ? cost / units : 0, 2)}
                 </div>
-                <div className="os-stat-sub">before it can be sold</div>
+                <div className="os-stat-sub">{recipe?.unitType ?? "per unit"}</div>
               </div>
             </div>
             {short && (

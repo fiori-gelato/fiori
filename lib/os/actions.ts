@@ -12,6 +12,7 @@ import type {
   ProductionBatch,
   Purchase,
   Sale,
+  StockAdjustment,
   Vault,
 } from "./types";
 import { recipeCost } from "./calc";
@@ -182,7 +183,14 @@ export function postEquipmentPurchase(
   eq.expenseId = expense.id;
 }
 
-/** Takes stock down and records why. Used for trials, usage and waste. */
+/**
+ * Takes stock down and records why. Used for trials, usage and spoilage.
+ *
+ * Spoilage also writes what it cost into the ledger. Nothing is added to a
+ * recipe for waste any more, so the only way a loss is counted is by being
+ * recorded here when it happens — and once it is, it shows up in Finance
+ * alongside every other cost.
+ */
 export function recordUsage(
   v: Vault,
   itemId: string,
@@ -195,7 +203,8 @@ export function recordUsage(
   if (!item || qty <= 0) return;
   const from = item.stock;
   item.stock = Math.max(0, from - qty);
-  v.adjustments.push({
+
+  const adjustment = {
     id: uid("adj_"),
     date: today(),
     itemId,
@@ -205,7 +214,36 @@ export function recordUsage(
     to: item.stock,
     reason,
     recipeId,
-  });
+  };
+
+  if (kind === "waste") {
+    const lost = qty * (item.unitCost || 0);
+    if (lost > 0) {
+      const expense = {
+        id: uid("exp_"),
+        date: adjustment.date,
+        category: "spoilage" as const,
+        description: `Spoiled — ${qty} ${item.unit} ${item.name}${reason ? ` (${reason})` : ""}`,
+        amount: lost,
+      };
+      v.expenses.push(expense);
+      (adjustment as StockAdjustment).expenseId = expense.id;
+    }
+  }
+
+  v.adjustments.push(adjustment);
+}
+
+/** Undoes a movement: the stock goes back, and so does any spoilage cost. */
+export function undoAdjustment(v: Vault, adjustmentId: string) {
+  const adj = v.adjustments.find((a) => a.id === adjustmentId);
+  if (!adj) return;
+  const item = v.inventory.find((i) => i.id === adj.itemId);
+  if (item) {
+    item.stock = adj.kind === "count" ? adj.from : item.stock + adj.qty;
+  }
+  if (adj.expenseId) v.expenses = v.expenses.filter((e) => e.id !== adj.expenseId);
+  v.adjustments = v.adjustments.filter((a) => a.id !== adjustmentId);
 }
 
 /** A counted figure replaces the running one, keeping the difference on record. */

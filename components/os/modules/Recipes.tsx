@@ -1,49 +1,31 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import {
-  Beaker,
-  FileDown,
-  GitBranch,
-  Lock,
-  Plus,
-  Star,
-  Trash2,
-  X,
-} from "lucide-react";
+import { useId, useMemo, useState } from "react";
+import { Beaker, FileDown, GitBranch, Lock, Plus, Trash2 } from "lucide-react";
 import { useVault } from "../VaultProvider";
 import { Card, Chip, Empty, Field, Modal, SectionTitle } from "../ui";
-import type { ModuleProps } from "../Shell";
 import { forkRecipe, recordTrial } from "@/lib/os/actions";
-import { batchesAvailable, recipeCost, recipeFeedback } from "@/lib/os/calc";
-import { ZAR, dateLabel, pct, today, uid } from "@/lib/os/format";
+import {
+  batchesAvailable,
+  recipeCost,
+  rememberedIngredients,
+  rememberedUnitTypes,
+} from "@/lib/os/calc";
+import { ZAR, dateLabel, today, uid } from "@/lib/os/format";
 import {
   STAGE_LABEL,
   type Recipe,
   type RecipeStage,
-  type Survey,
   type Unit,
 } from "@/lib/os/types";
 
 const STAGES: RecipeStage[] = ["idea", "trial", "testing", "approved", "archived"];
 const UNITS: Unit[] = ["g", "kg", "ml", "L", "unit"];
 
-/** Photos are downscaled before storage so the vault stays small. */
-async function shrink(file: File, max = 900): Promise<string> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL("image/jpeg", 0.72);
-}
-
-export default function Recipes({ onNavigate }: ModuleProps) {
+export default function Recipes() {
   const { vault, update } = useVault();
   const [openId, setOpenId] = useState<string | null>(null);
   const [filter, setFilter] = useState<RecipeStage | "all">("all");
-  const [surveyFor, setSurveyFor] = useState<string | null>(null);
 
   const recipes = useMemo(() => {
     if (!vault) return [];
@@ -55,31 +37,21 @@ export default function Recipes({ onNavigate }: ModuleProps) {
   if (!vault) return null;
   const open = vault.recipes.find((r) => r.id === openId) ?? null;
 
+  /* A new flavour starts with the last unit type used, since a kitchen
+     settles on one or two formats and repeats them. */
   function addRecipe() {
     const id = uid("rec_");
+    const lastUnitType = rememberedUnitTypes(vault!)[0];
     update((d) => {
       d.recipes.push({
         id,
-        name: "New recipe",
+        name: "",
         version: 1,
         stage: "idea",
-        yieldLitres: 8,
-        outputUnits: 16,
-        sellingPrice: 190,
-        productionMinutes: 60,
-        blastFreezeMinutes: 240,
+        yieldKg: 5,
+        outputUnits: 20,
+        unitType: lastUnitType,
         ingredients: [],
-        quality: {
-          appearance: "",
-          texture: "",
-          colour: "",
-          melt: "",
-          overrun: "",
-          taste: "",
-          customerFeedback: "",
-          lessons: "",
-        },
-        photos: [],
         notes: "",
         createdAt: today(),
       });
@@ -110,7 +82,7 @@ export default function Recipes({ onNavigate }: ModuleProps) {
           ))}
         </div>
         <button className="os-btn os-right" onClick={addRecipe}>
-          <Plus size={15} /> New recipe
+          <Plus size={15} /> New flavour
         </button>
       </div>
 
@@ -118,8 +90,6 @@ export default function Recipes({ onNavigate }: ModuleProps) {
         <div className="os-grid os-grid--3">
           {recipes.map((r) => {
             const cost = recipeCost(vault, r);
-            const fb = recipeFeedback(vault, r.id);
-            const cover = r.photos.find((p) => p.kind === "finished") ?? r.photos[0];
             return (
               <Card key={r.id}>
                 <button
@@ -131,17 +101,10 @@ export default function Recipes({ onNavigate }: ModuleProps) {
                     width: "100%",
                   }}
                 >
-                  {cover && (
-                    <div
-                      className="os-photo"
-                      style={{ aspectRatio: "16/9", marginBottom: 12 }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={cover.src} alt="" />
-                    </div>
-                  )}
                   <div className="os-flex" style={{ marginBottom: 8 }}>
-                    <strong style={{ fontSize: 16 }}>{r.name}</strong>
+                    <strong style={{ fontSize: 16 }}>
+                      {r.name || "Untitled flavour"}
+                    </strong>
                     <span className="os-muted os-small">v{r.version}</span>
                     <span className="os-right">
                       <Chip tone={r.stage === "approved" ? "accent" : undefined}>
@@ -151,22 +114,18 @@ export default function Recipes({ onNavigate }: ModuleProps) {
                   </div>
                   <div className="os-small os-muted" style={{ display: "grid", gap: 3 }}>
                     <span>
-                      Cost/unit {ZAR(cost.costPerUnit, 2)} · sells {ZAR(r.sellingPrice)}
+                      <strong>{ZAR(cost.costPerUnit, 2)}</strong> each
+                      {r.unitType ? ` · ${r.unitType}` : ""}
                     </span>
                     <span>
-                      Margin{" "}
-                      <strong
-                        className={cost.margin >= 0.6 ? "os-pos" : undefined}
-                        style={{ color: cost.margin < 0.4 ? "var(--os-danger)" : undefined }}
-                      >
-                        {pct(cost.margin)}
-                      </strong>{" "}
-                      · {ZAR(cost.costPerLitre, 2)}/L
+                      Batch makes {r.outputUnits} from {r.yieldKg} kg ·{" "}
+                      {ZAR(cost.costPerKg, 2)}/kg
                     </span>
                     <span>
-                      Stock supports {batchesAvailable(vault, r)} batch
+                      {r.ingredients.length} ingredient
+                      {r.ingredients.length === 1 ? "" : "s"} · stock supports{" "}
+                      {batchesAvailable(vault, r)} batch
                       {batchesAvailable(vault, r) === 1 ? "" : "es"}
-                      {fb ? ` · ★ ${fb.overall.toFixed(1)} (${fb.count})` : ""}
                     </span>
                   </div>
                 </button>
@@ -176,27 +135,17 @@ export default function Recipes({ onNavigate }: ModuleProps) {
         </div>
       ) : (
         <Empty
-          title="No recipes yet"
-          body="Start with an idea — cost it from inventory, trial it, then approve to lock it."
+          title="No flavours yet"
+          body="A flavour is a name, what a batch yields, and what goes into it. The cost works itself out from your stock."
           action={
             <button className="os-btn" onClick={addRecipe}>
-              <Plus size={15} /> New recipe
+              <Plus size={15} /> New flavour
             </button>
           }
         />
       )}
 
-      {open && (
-        <RecipeEditor
-          recipe={open}
-          onClose={() => setOpenId(null)}
-          onSurvey={() => setSurveyFor(open.id)}
-          onNavigate={onNavigate}
-        />
-      )}
-      {surveyFor && (
-        <SurveyForm recipeId={surveyFor} onClose={() => setSurveyFor(null)} />
-      )}
+      {open && <RecipeEditor recipe={open} onClose={() => setOpenId(null)} />}
     </div>
   );
 }
@@ -204,27 +153,22 @@ export default function Recipes({ onNavigate }: ModuleProps) {
 function RecipeEditor({
   recipe,
   onClose,
-  onSurvey,
-  onNavigate,
 }: {
   recipe: Recipe;
   onClose: () => void;
-  onSurvey: () => void;
-  onNavigate: ModuleProps["onNavigate"];
 }) {
   const { vault, update } = useVault();
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [photoKind, setPhotoKind] = useState<"process" | "finished" | "packaging">(
-    "finished"
-  );
   const [trialOpen, setTrialOpen] = useState(false);
   const [trialBatches, setTrialBatches] = useState(1);
   const [trialNote, setTrialNote] = useState("");
+  const unitListId = useId();
+  const ingredientListId = useId();
   if (!vault) return null;
 
   const locked = !!recipe.lockedAt;
   const cost = recipeCost(vault, recipe);
-  const feedback = recipeFeedback(vault, recipe.id);
+  const known = rememberedIngredients(vault);
+  const unitTypes = rememberedUnitTypes(vault);
   const versions = vault.recipes
     .filter((r) => r.name === recipe.name)
     .sort((a, b) => b.version - a.version);
@@ -235,43 +179,36 @@ function RecipeEditor({
       if (r) fn(r);
     });
 
-  function approve() {
+  /**
+   * One field for the ingredient, whether it is stocked or not.
+   *
+   * Typing a name that matches something in stock links the line to it, so
+   * its cost follows what was paid. Anything else stays as typed, and
+   * comes back as a suggestion on the next recipe with the unit and cost it
+   * had here.
+   */
+  function nameIngredient(idx: number, typed: string) {
+    const match = known.find(
+      (k) => k.name.toLowerCase() === typed.trim().toLowerCase()
+    );
     set((r) => {
-      r.stage = "approved";
-      r.lockedAt = today();
+      const l = r.ingredients[idx];
+      if (match?.itemId) {
+        l.itemId = match.itemId;
+        l.name = undefined;
+        l.unit = undefined;
+        l.cost = undefined;
+        return;
+      }
+      l.itemId = undefined;
+      l.name = typed;
+      l.unit = l.unit ?? match?.unit ?? "g";
+      l.cost = l.cost ?? match?.cost ?? 0;
     });
   }
-
-  function newVersion() {
-    let id: string | null = null;
-    update((d) => {
-      id = forkRecipe(d, recipe.id);
-    });
-    if (id) setTimeout(() => onClose(), 0);
-  }
-
-  async function addPhotos(files: FileList | null) {
-    if (!files?.length) return;
-    const srcs = await Promise.all([...files].map((f) => shrink(f)));
-    set((r) => {
-      srcs.forEach((src) =>
-        r.photos.push({ id: uid("ph_"), src, kind: photoKind })
-      );
-    });
-  }
-
-  function exportPDF() {
-    /* The browser's own print-to-PDF keeps this dependency-free and gives a
-       proper page size dialogue. */
-    window.print();
-  }
-
-  const ingredients = vault.inventory.filter(
-    (i) => i.category !== "finished" && !i.archived
-  );
 
   return (
-    <Modal title={`${recipe.name} · v${recipe.version}`} onClose={onClose}>
+    <Modal title={recipe.name || "New flavour"} onClose={onClose}>
       <div className="os-stack">
         {locked && (
           <div className="os-locked-note">
@@ -281,11 +218,26 @@ function RecipeEditor({
           </div>
         )}
 
+        <datalist id={unitListId}>
+          {unitTypes.map((u) => (
+            <option key={u} value={u} />
+          ))}
+        </datalist>
+        <datalist id={ingredientListId}>
+          {known.map((k) => (
+            <option key={k.name} value={k.name}>
+              {k.itemId ? "in stock" : "used before"}
+            </option>
+          ))}
+        </datalist>
+
         <div className="os-row os-no-print">
           <Field label="Name">
             <input
               className="os-input"
               value={recipe.name}
+              placeholder="Pistachio"
+              autoFocus={!recipe.name}
               disabled={locked}
               onChange={(e) => set((r) => void (r.name = e.target.value))}
             />
@@ -309,21 +261,22 @@ function RecipeEditor({
         </div>
 
         <div className="os-row">
-          <Field label="Yield (litres)">
+          <Field label="Yield (kg)">
             <input
               className="os-input"
               type="number"
-              value={recipe.yieldLitres}
+              step="any"
+              min="0"
+              value={recipe.yieldKg}
               disabled={locked}
-              onChange={(e) =>
-                set((r) => void (r.yieldLitres = Number(e.target.value)))
-              }
+              onChange={(e) => set((r) => void (r.yieldKg = Number(e.target.value)))}
             />
           </Field>
           <Field label="Units per batch">
             <input
               className="os-input"
               type="number"
+              min="0"
               value={recipe.outputUnits}
               disabled={locked}
               onChange={(e) =>
@@ -331,62 +284,20 @@ function RecipeEditor({
               }
             />
           </Field>
-          <Field label="Selling price">
+          <Field label="Unit type">
             <input
               className="os-input"
-              type="number"
-              value={recipe.sellingPrice}
+              list={unitListId}
+              value={recipe.unitType ?? ""}
+              placeholder="120ml cup"
               disabled={locked}
-              onChange={(e) =>
-                set((r) => void (r.sellingPrice = Number(e.target.value)))
-              }
+              onChange={(e) => set((r) => void (r.unitType = e.target.value))}
             />
           </Field>
         </div>
-
-        <div className="os-row">
-          <Field label="Production (min)">
-            <input
-              className="os-input"
-              type="number"
-              value={recipe.productionMinutes}
-              disabled={locked}
-              onChange={(e) =>
-                set((r) => void (r.productionMinutes = Number(e.target.value)))
-              }
-            />
-          </Field>
-          <Field label="Blast freeze (min)">
-            <input
-              className="os-input"
-              type="number"
-              value={recipe.blastFreezeMinutes}
-              disabled={locked}
-              onChange={(e) =>
-                set((r) => void (r.blastFreezeMinutes = Number(e.target.value)))
-              }
-            />
-          </Field>
-          <Field label="Produces">
-            <select
-              className="os-select"
-              value={recipe.outputItemId ?? ""}
-              disabled={locked}
-              onChange={(e) =>
-                set((r) => void (r.outputItemId = e.target.value || undefined))
-              }
-            >
-              <option value="">— finished stock item —</option>
-              {vault.inventory
-                .filter((i) => i.category === "finished")
-                .map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.name}
-                  </option>
-                ))}
-            </select>
-          </Field>
-        </div>
+        <p className="os-small os-muted" style={{ margin: "-4px 0 0" }}>
+          Type a unit once and it is offered on every flavour after this one.
+        </p>
 
         <SectionTitle>Ingredients</SectionTitle>
         {recipe.ingredients.map((line, idx) => {
@@ -394,62 +305,26 @@ function RecipeEditor({
             ? vault.inventory.find((i) => i.id === line.itemId)
             : undefined;
           const free = !line.itemId;
-          const lineCost = free
-            ? (line.cost ?? 0)
-            : (item?.unitCost ?? 0) * line.qty;
+          const lineCost = free ? (line.cost ?? 0) : (item?.unitCost ?? 0) * line.qty;
           return (
             <Card key={idx} style={{ marginBottom: 10 }}>
               <div className="os-row">
                 <Field label="Ingredient">
-                  <select
-                    className="os-select"
-                    value={free ? "__free" : line.itemId}
+                  <input
+                    className="os-input"
+                    list={ingredientListId}
+                    value={item ? item.name : (line.name ?? "")}
+                    placeholder="Milk"
                     disabled={locked}
-                    onChange={(e) =>
-                      set((r) => {
-                        const l = r.ingredients[idx];
-                        if (e.target.value === "__free") {
-                          l.itemId = undefined;
-                          l.name = l.name ?? "";
-                          l.unit = l.unit ?? "g";
-                          l.cost = l.cost ?? 0;
-                        } else {
-                          l.itemId = e.target.value;
-                          l.name = undefined;
-                          l.unit = undefined;
-                          l.cost = undefined;
-                        }
-                      })
-                    }
-                  >
-                    {ingredients.map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.name}
-                      </option>
-                    ))}
-                    <option value="__free">— type it in myself —</option>
-                  </select>
+                    onChange={(e) => nameIngredient(idx, e.target.value)}
+                  />
                 </Field>
 
-                {free && (
-                  <Field label="Name">
-                    <input
-                      className="os-input"
-                      value={line.name ?? ""}
-                      placeholder="Mint leaves"
-                      disabled={locked}
-                      onChange={(e) =>
-                        set((r) => void (r.ingredients[idx].name = e.target.value))
-                      }
-                    />
-                  </Field>
-                )}
-
-                <Field label={`Quantity${item ? ` (${item.unit})` : ""}`}>
+                <Field label={`How much${item ? ` (${item.unit})` : ""}`}>
                   <input
                     className="os-input"
                     type="number"
-                    step="0.01"
+                    step="any"
                     min="0"
                     value={line.qty}
                     disabled={locked}
@@ -479,11 +354,11 @@ function RecipeEditor({
                 )}
 
                 {free ? (
-                  <Field label="Cost of this amount (R)">
+                  <Field label="Cost of that (R)">
                     <input
                       className="os-input"
                       type="number"
-                      step="0.01"
+                      step="any"
                       min="0"
                       value={line.cost ?? 0}
                       disabled={locked}
@@ -493,11 +368,11 @@ function RecipeEditor({
                     />
                   </Field>
                 ) : (
-                  <Field label={`Current cost per ${item?.unit ?? "unit"} (R)`}>
+                  <Field label={`Cost per ${item?.unit ?? "unit"} (R)`}>
                     <input
                       className="os-input"
                       type="number"
-                      step="0.01"
+                      step="any"
                       min="0"
                       value={item?.unitCost ?? 0}
                       disabled={locked || !item}
@@ -510,51 +385,34 @@ function RecipeEditor({
                     />
                   </Field>
                 )}
-              </div>
-              <div className="os-flex os-small os-muted">
-                <span>
-                  Costs <strong>{ZAR(lineCost, 2)}</strong> per batch
-                  {!free && item && (
-                    <> · changing the cost updates it everywhere this item is used</>
-                  )}
-                  {free && <> · not tracked in stock</>}
-                </span>
-                {!locked && (
+
+                <span className="os-shrink">
                   <button
-                    className="os-btn os-btn--ghost os-btn--sm os-right"
+                    className="os-btn os-btn--ghost os-btn--sm"
+                    disabled={locked}
+                    aria-label="Remove ingredient"
                     onClick={() => set((r) => void r.ingredients.splice(idx, 1))}
                   >
-                    <Trash2 size={13} /> Remove
+                    <Trash2 size={13} />
                   </button>
-                )}
+                </span>
               </div>
+              <p className="os-small os-muted" style={{ margin: 0 }}>
+                <strong>{ZAR(lineCost, 2)}</strong> a batch
+                {item
+                  ? " · follows what you paid for it"
+                  : " · typed in, so not counted in stock"}
+              </p>
             </Card>
           );
         })}
         {!locked && (
-          <div className="os-flex">
-            <button
-              className="os-btn os-btn--ghost os-btn--sm"
-              onClick={() =>
-                set((r) =>
-                  r.ingredients.push({ itemId: ingredients[0]?.id, qty: 1 })
-                )
-              }
-              disabled={!ingredients.length}
-            >
-              <Plus size={13} /> From inventory
-            </button>
-            <button
-              className="os-btn os-btn--ghost os-btn--sm"
-              onClick={() =>
-                set((r) =>
-                  r.ingredients.push({ qty: 1, name: "", unit: "g", cost: 0 })
-                )
-              }
-            >
-              <Plus size={13} /> Other ingredient
-            </button>
-          </div>
+          <button
+            className="os-btn os-btn--ghost os-btn--sm"
+            onClick={() => set((r) => r.ingredients.push({ qty: 1, name: "", unit: "g", cost: 0 }))}
+          >
+            <Plus size={13} /> Add an ingredient
+          </button>
         )}
 
         <Card>
@@ -564,179 +422,53 @@ function RecipeEditor({
               <div className="os-stat-value" style={{ fontSize: 21 }}>
                 {ZAR(cost.totalCost, 2)}
               </div>
-              <div className="os-stat-sub">
-                incl. {vault.settings.wastePct}% waste ({ZAR(cost.wasteCost, 2)})
-              </div>
+              <div className="os-stat-sub">{recipe.ingredients.length} ingredients</div>
             </div>
             <div>
-              <div className="os-stat-label">Per litre / per unit</div>
+              <div className="os-stat-label">Cost per {recipe.unitType || "unit"}</div>
               <div className="os-stat-value" style={{ fontSize: 21 }}>
-                {ZAR(cost.costPerLitre, 2)}
+                {ZAR(cost.costPerUnit, 2)}
               </div>
-              <div className="os-stat-sub">{ZAR(cost.costPerUnit, 2)} per unit</div>
+              <div className="os-stat-sub">{recipe.outputUnits} a batch</div>
             </div>
             <div>
-              <div className="os-stat-label">Gross margin</div>
-              <div
-                className="os-stat-value"
-                style={{
-                  fontSize: 21,
-                  color:
-                    cost.margin >= 0.6
-                      ? "var(--os-accent)"
-                      : cost.margin < 0.4
-                        ? "var(--os-danger)"
-                        : undefined,
-                }}
-              >
-                {pct(cost.margin)}
+              <div className="os-stat-label">Cost per kg</div>
+              <div className="os-stat-value" style={{ fontSize: 21 }}>
+                {ZAR(cost.costPerKg, 2)}
               </div>
-              <div className="os-stat-sub">{ZAR(cost.grossProfit, 2)} per unit</div>
+              <div className="os-stat-sub">{recipe.yieldKg} kg a batch</div>
             </div>
           </div>
           {cost.missingPrice && (
             <p className="os-small" style={{ color: "var(--os-danger)", marginTop: 10 }}>
-              Some ingredients have no purchase price yet — record a purchase to
-              cost this accurately.
+              Something here has no price yet, so this is lower than the truth.
             </p>
           )}
+          <p className="os-small os-muted" style={{ marginTop: 10, marginBottom: 0 }}>
+            What it sells for is decided on the sale itself, so there is no
+            price to set here.
+          </p>
         </Card>
 
-        <SectionTitle>Quality control</SectionTitle>
-        <div className="os-row">
-          {(
-            [
-              ["appearance", "Appearance"],
-              ["texture", "Texture"],
-              ["colour", "Colour"],
-              ["melt", "Melt"],
-              ["overrun", "Overrun"],
-            ] as const
-          ).map(([k, label]) => (
-            <Field key={k} label={label}>
-              <input
-                className="os-input"
-                value={recipe.quality[k]}
-                disabled={locked}
-                onChange={(e) => set((r) => void (r.quality[k] = e.target.value))}
-              />
-            </Field>
-          ))}
-        </div>
-        {(
-          [
-            ["taste", "Taste notes"],
-            ["customerFeedback", "Customer feedback"],
-            ["lessons", "Lessons learnt"],
-          ] as const
-        ).map(([k, label]) => (
-          <Field key={k} label={label}>
-            <textarea
-              className="os-textarea"
-              value={recipe.quality[k]}
-              disabled={locked}
-              onChange={(e) => set((r) => void (r.quality[k] = e.target.value))}
-            />
-          </Field>
-        ))}
-
-        <SectionTitle>Photographs</SectionTitle>
-        {!locked && (
-          <div className="os-flex os-no-print">
-            <select
-              className="os-select"
-              style={{ maxWidth: 180 }}
-              value={photoKind}
-              onChange={(e) =>
-                setPhotoKind(e.target.value as "process" | "finished" | "packaging")
-              }
-            >
-              <option value="finished">Finished product</option>
-              <option value="process">Process</option>
-              <option value="packaging">Packaging</option>
-            </select>
-            <button
-              className="os-btn os-btn--ghost os-btn--sm"
-              onClick={() => fileRef.current?.click()}
-            >
-              <Plus size={13} /> Add photos
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              multiple
-              hidden
-              onChange={(e) => addPhotos(e.target.files)}
-            />
-          </div>
-        )}
-        {recipe.photos.length ? (
-          <div className="os-photos">
-            {recipe.photos.map((p) => (
-              <div className="os-photo" key={p.id}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.src} alt={p.kind} />
-                <span>{p.kind}</span>
-                {!locked && (
-                  <button
-                    onClick={() =>
-                      set((r) => void (r.photos = r.photos.filter((x) => x.id !== p.id)))
-                    }
-                    aria-label="Remove photo"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="os-small os-muted">No photographs yet.</p>
-        )}
-
-        <SectionTitle>Customer insight</SectionTitle>
-        {feedback ? (
-          <Card>
-            <div className="os-grid os-grid--4">
-              {(
-                [
-                  ["Overall", feedback.overall],
-                  ["Taste", feedback.taste],
-                  ["Texture", feedback.texture],
-                  ["Packaging", feedback.packaging],
-                ] as const
-              ).map(([label, value]) => (
-                <div key={label}>
-                  <div className="os-stat-label">{label}</div>
-                  <div className="os-stat-value" style={{ fontSize: 19 }}>
-                    {value.toFixed(1)}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="os-small os-muted" style={{ marginTop: 10, marginBottom: 0 }}>
-              From {feedback.count} response{feedback.count === 1 ? "" : "s"} ·
-              purchase likelihood {feedback.likelihood.toFixed(1)}/5
-            </p>
-          </Card>
-        ) : (
-          <p className="os-small os-muted">
-            No tasting feedback captured for this recipe yet.
-          </p>
-        )}
-        <div className="os-flex os-no-print">
-          <button className="os-btn os-btn--ghost os-btn--sm" onClick={onSurvey}>
-            <Star size={13} /> Record tasting feedback
-          </button>
-          <button
-            className="os-btn os-btn--ghost os-btn--sm"
-            disabled={!recipe.ingredients.length}
-            onClick={() => setTrialOpen(true)}
+        <Field label="Which finished stock a batch makes (optional)">
+          <select
+            className="os-select"
+            value={recipe.outputItemId ?? ""}
+            disabled={locked}
+            onChange={(e) =>
+              set((r) => void (r.outputItemId = e.target.value || undefined))
+            }
           >
-            <Beaker size={13} /> Log a trial batch
-          </button>
-        </div>
+            <option value="">— not tracked in the freezer —</option>
+            {vault.inventory
+              .filter((i) => i.category === "finished")
+              .map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.name}
+                </option>
+              ))}
+          </select>
+        </Field>
 
         <Field label="Notes">
           <textarea
@@ -755,17 +487,35 @@ function RecipeEditor({
 
         <div className="os-flex os-no-print" style={{ marginTop: 6 }}>
           {!locked && recipe.stage !== "archived" && (
-            <button className="os-btn os-btn--accent" onClick={approve}>
+            <button className="os-btn os-btn--accent" onClick={() =>
+              set((r) => {
+                r.stage = "approved";
+                r.lockedAt = today();
+              })
+            }>
               <Lock size={15} /> Approve &amp; lock
             </button>
           )}
           {locked && (
-            <button className="os-btn" onClick={newVersion}>
+            <button
+              className="os-btn"
+              onClick={() => {
+                update((d) => void forkRecipe(d, recipe.id));
+                setTimeout(onClose, 0);
+              }}
+            >
               <GitBranch size={15} /> New version
             </button>
           )}
-          <button className="os-btn os-btn--ghost" onClick={exportPDF}>
-            <FileDown size={15} /> Export PDF
+          <button
+            className="os-btn os-btn--ghost os-btn--sm"
+            disabled={!recipe.ingredients.length}
+            onClick={() => setTrialOpen(true)}
+          >
+            <Beaker size={13} /> Log a trial batch
+          </button>
+          <button className="os-btn os-btn--ghost os-btn--sm" onClick={() => window.print()}>
+            <FileDown size={13} /> Export PDF
           </button>
           <button
             className="os-btn os-btn--danger os-btn--sm os-right"
@@ -805,8 +555,9 @@ function RecipeEditor({
           }
         >
           <p className="os-small os-muted">
-            A trial takes the ingredients out of stock without producing sellable
-            units — the cost lands in R&amp;D rather than in finished goods.
+            A trial takes the ingredients out of stock without producing
+            sellable units — the cost lands in R&amp;D rather than in finished
+            goods.
           </p>
           <div className="os-row">
             <Field label="How many batches">
@@ -858,135 +609,6 @@ function RecipeEditor({
           </Card>
         </Modal>
       )}
-    </Modal>
-  );
-}
-
-function SurveyForm({
-  recipeId,
-  onClose,
-}: {
-  recipeId: string;
-  onClose: () => void;
-}) {
-  const { update } = useVault();
-  const [s, setS] = useState<Omit<Survey, "id">>({
-    date: today(),
-    recipeId,
-    respondent: "",
-    demographic: "",
-    ratingOverall: 4,
-    ratingTaste: 4,
-    ratingTexture: 4,
-    ratingPackaging: 4,
-    pricePerception: "fair",
-    purchaseLikelihood: 4,
-    favouriteFlavour: "",
-    comments: "",
-  });
-
-  const rating = (
-    label: string,
-    key: "ratingOverall" | "ratingTaste" | "ratingTexture" | "ratingPackaging" | "purchaseLikelihood"
-  ) => (
-    <Field label={`${label} — ${s[key]}/5`}>
-      <input
-        className="os-input"
-        type="range"
-        min={1}
-        max={5}
-        value={s[key]}
-        onChange={(e) => setS({ ...s, [key]: Number(e.target.value) })}
-      />
-    </Field>
-  );
-
-  return (
-    <Modal
-      title="Tasting feedback"
-      onClose={onClose}
-      footer={
-        <>
-          <button className="os-btn os-btn--ghost" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            className="os-btn"
-            onClick={() => {
-              update((d) => d.surveys.push({ ...s, id: uid("sur_") }));
-              onClose();
-            }}
-          >
-            Save feedback
-          </button>
-        </>
-      }
-    >
-      <div className="os-row">
-        <Field label="Date">
-          <input
-            className="os-input"
-            type="date"
-            value={s.date}
-            onChange={(e) => setS({ ...s, date: e.target.value })}
-          />
-        </Field>
-        <Field label="Respondent (optional)">
-          <input
-            className="os-input"
-            value={s.respondent}
-            onChange={(e) => setS({ ...s, respondent: e.target.value })}
-          />
-        </Field>
-        <Field label="Demographic (optional)">
-          <input
-            className="os-input"
-            value={s.demographic}
-            onChange={(e) => setS({ ...s, demographic: e.target.value })}
-          />
-        </Field>
-      </div>
-      <div className="os-row">
-        {rating("Overall", "ratingOverall")}
-        {rating("Taste", "ratingTaste")}
-      </div>
-      <div className="os-row">
-        {rating("Texture", "ratingTexture")}
-        {rating("Packaging", "ratingPackaging")}
-      </div>
-      <div className="os-row">
-        {rating("Would buy", "purchaseLikelihood")}
-        <Field label="Price perception">
-          <select
-            className="os-select"
-            value={s.pricePerception}
-            onChange={(e) =>
-              setS({
-                ...s,
-                pricePerception: e.target.value as Survey["pricePerception"],
-              })
-            }
-          >
-            <option value="cheap">Cheap</option>
-            <option value="fair">Fair</option>
-            <option value="expensive">Expensive</option>
-          </select>
-        </Field>
-      </div>
-      <Field label="Favourite flavour">
-        <input
-          className="os-input"
-          value={s.favouriteFlavour}
-          onChange={(e) => setS({ ...s, favouriteFlavour: e.target.value })}
-        />
-      </Field>
-      <Field label="Comments">
-        <textarea
-          className="os-textarea"
-          value={s.comments}
-          onChange={(e) => setS({ ...s, comments: e.target.value })}
-        />
-      </Field>
     </Modal>
   );
 }

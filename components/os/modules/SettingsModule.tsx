@@ -96,16 +96,6 @@ export default function SettingsModule() {
               }
             />
           </Field>
-          <Field label="Waste allowance (%)">
-            <input
-              className="os-input"
-              type="number"
-              value={vault.settings.wastePct}
-              onChange={(e) =>
-                update((d) => void (d.settings.wastePct = Number(e.target.value)))
-              }
-            />
-          </Field>
         </div>
         <Field label="Theme">
           <select

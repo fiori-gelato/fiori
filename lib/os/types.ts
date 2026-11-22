@@ -79,12 +79,14 @@ export interface StockAdjustment {
   reason: string;
   /** Set when a recipe trial consumed it, so R&D cost is traceable. */
   recipeId?: ID;
+  /** Spoilage writes what it cost into the ledger; this is that entry. */
+  expenseId?: ID;
 }
 
 export const MOVEMENT_LABEL: Record<MovementKind, string> = {
   trial: "Trial batch",
   usage: "Used",
-  waste: "Wasted / spoiled",
+  waste: "Spoiled",
   count: "Stock take",
 };
 
@@ -121,26 +123,12 @@ export interface RecipeIngredient {
   cost?: number;
 }
 
-export interface QualityCheck {
-  appearance: string;
-  texture: string;
-  colour: string;
-  melt: string;
-  /** Percentage air incorporated. */
-  overrun: string;
-  taste: string;
-  customerFeedback: string;
-  lessons: string;
-}
-
-export interface RecipePhoto {
-  id: ID;
-  /** Data URL, downscaled on import. */
-  src: string;
-  caption?: string;
-  kind: "process" | "finished" | "packaging";
-}
-
+/**
+ * A flavour: what goes into a batch, and what a batch gives you.
+ *
+ * It carries no selling price. What something sells for is decided at the
+ * till, sale by sale, so a recipe only ever needs to answer what it costs.
+ */
 export interface Recipe {
   id: ID;
   name: string;
@@ -148,17 +136,14 @@ export interface Recipe {
   /** Set when this version was created from an approved parent. */
   parentId?: ID;
   stage: RecipeStage;
-  /** Litres of finished gelato the batch yields. */
-  yieldLitres: number;
+  /** Kilograms of finished gelato the batch yields. */
+  yieldKg: number;
   /** Which finished-goods item a batch produces, and how many. */
   outputItemId?: ID;
   outputUnits: number;
-  sellingPrice: number;
-  productionMinutes: number;
-  blastFreezeMinutes: number;
+  /** What one of those units is called — "120ml cup", "1L tub". */
+  unitType?: string;
   ingredients: RecipeIngredient[];
-  quality: QualityCheck;
-  photos: RecipePhoto[];
   notes: string;
   createdAt: ISODate;
   /** Approved recipes are read-only; edits fork a new version. */
@@ -171,9 +156,8 @@ export interface ProductionBatch {
   recipeId: ID;
   /** Multiples of the recipe's batch size. */
   batches: number;
-  litresProduced: number;
+  kgProduced: number;
   unitsProduced: number;
-  wasteLitres: number;
   labourMinutes: number;
   downtimeMinutes: number;
   notes?: string;
@@ -294,6 +278,7 @@ export type ExpenseCategory =
   | "dryIce"
   | "cardFees"
   | "consumables"
+  | "spoilage"
   | "other";
 
 export interface Expense {
@@ -419,7 +404,6 @@ export interface Settings {
   businessName: string;
   /** Opening loan capital, per the investor pack. */
   loanCapital: number;
-  wastePct: number;
   theme: "light" | "dark" | "system";
   /** Set once the admin passphrase has been configured. */
   adminHash?: string;
@@ -494,6 +478,7 @@ export const EXPENSE_LABEL: Record<ExpenseCategory, string> = {
   dryIce: "Dry ice",
   cardFees: "Card fees",
   consumables: "Consumables",
+  spoilage: "Spoilage",
   other: "Other",
 };
 

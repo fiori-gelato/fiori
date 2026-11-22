@@ -10,11 +10,13 @@
 import type {
   ExpenseCategory,
   Funding,
+  ID,
   InventoryItem,
   PackagingType,
   Recipe,
   SaleLine,
   SalesChannel,
+  Unit,
   Vault,
 } from "./types";
 import { CHANNEL_LABEL, MOVEMENT_LABEL } from "./types";
@@ -75,16 +77,19 @@ export function fundingLabel(split: FundingSplit): string {
 
 export interface RecipeCost {
   ingredientCost: number;
-  wasteCost: number;
   totalCost: number;
-  costPerLitre: number;
+  costPerKg: number;
   costPerUnit: number;
-  grossProfit: number;
-  margin: number;
   missingPrice: boolean;
 }
 
-/** Costs a recipe from live inventory pricing, plus the waste allowance. */
+/**
+ * What a batch costs, from what the ingredients actually cost.
+ *
+ * Nothing is added for waste. What is thrown away is recorded when it is
+ * thrown away, as spoilage against the real item, rather than guessed at
+ * here as a percentage on every batch.
+ */
 export function recipeCost(v: Vault, r: Recipe): RecipeCost {
   let ingredientCost = 0;
   let missingPrice = false;
@@ -103,38 +108,60 @@ export function recipeCost(v: Vault, r: Recipe): RecipeCost {
     if (!item.unitCost) missingPrice = true;
     ingredientCost += item.unitCost * line.qty;
   }
-  const wasteCost = ingredientCost * (v.settings.wastePct / 100);
-  const totalCost = ingredientCost + wasteCost;
-  const costPerLitre = r.yieldLitres > 0 ? totalCost / r.yieldLitres : 0;
+  const totalCost = ingredientCost;
+  const costPerKg = r.yieldKg > 0 ? totalCost / r.yieldKg : 0;
   const costPerUnit = r.outputUnits > 0 ? totalCost / r.outputUnits : 0;
-  const grossProfit = r.sellingPrice - costPerUnit;
-  const margin = r.sellingPrice > 0 ? grossProfit / r.sellingPrice : 0;
-  return {
-    ingredientCost,
-    wasteCost,
-    totalCost,
-    costPerLitre,
-    costPerUnit,
-    grossProfit,
-    margin,
-    missingPrice,
-  };
+  return { ingredientCost, totalCost, costPerKg, costPerUnit, missingPrice };
 }
 
-/** Survey scores attached to a recipe, so R&D sees real feedback. */
-export function recipeFeedback(v: Vault, recipeId: string) {
-  const rows = v.surveys.filter((s) => s.recipeId === recipeId);
-  if (!rows.length) return null;
-  const avg = (sel: (s: (typeof rows)[number]) => number) =>
-    rows.reduce((a, s) => a + sel(s), 0) / rows.length;
-  return {
-    count: rows.length,
-    overall: avg((s) => s.ratingOverall),
-    taste: avg((s) => s.ratingTaste),
-    texture: avg((s) => s.ratingTexture),
-    packaging: avg((s) => s.ratingPackaging),
-    likelihood: avg((s) => s.purchaseLikelihood),
+/**
+ * Everything typed into an ingredient line before, so it can be offered
+ * again rather than retyped.
+ *
+ * Stocked items come first, since picking one links the line to real
+ * purchase prices. After them come the names typed in by hand, each
+ * remembering the unit and cost it last carried.
+ */
+export interface RememberedIngredient {
+  name: string;
+  itemId?: ID;
+  unit: Unit;
+  /** What the quantity last cost, for a typed-in line. */
+  cost?: number;
+  qty?: number;
+}
+
+export function rememberedIngredients(v: Vault): RememberedIngredient[] {
+  const out: RememberedIngredient[] = v.inventory
+    .filter((i) => i.category !== "finished" && !i.archived)
+    .map((i) => ({ name: i.name, itemId: i.id, unit: i.unit }));
+
+  const seen = new Set(out.map((o) => o.name.toLowerCase()));
+  for (const r of v.recipes) {
+    for (const line of r.ingredients) {
+      const name = line.name?.trim();
+      if (!line.itemId && name && !seen.has(name.toLowerCase())) {
+        seen.add(name.toLowerCase());
+        out.push({ name, unit: line.unit ?? "g", cost: line.cost, qty: line.qty });
+      }
+    }
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * The names already used for what a batch is divided into — "120ml cup",
+ * "1L tub". Packaging formats count too: they are usually the same thing.
+ */
+export function rememberedUnitTypes(v: Vault): string[] {
+  const seen = new Set<string>();
+  const add = (s?: string) => {
+    const t = s?.trim();
+    if (t) seen.add(t);
   };
+  v.recipes.forEach((r) => add(r.unitType));
+  v.packaging.filter((p) => !p.archived).forEach((p) => add(p.name));
+  return [...seen].sort((a, b) => a.localeCompare(b));
 }
 
 /* ------------------------------------------------------------------ */
@@ -297,8 +324,11 @@ export function packagingCost(v: Vault, pkg: PackagingType): number {
 }
 
 /**
- * What one serving costs: the gelato for the volume the packaging holds,
- * plus the packaging itself.
+ * What one serving costs: one unit of the flavour, plus its packaging.
+ *
+ * The gelato side is the recipe's own cost per unit — a batch says how many
+ * units it makes, so a unit is already the thing being sold. No volume is
+ * converted and no density is assumed.
  *
  * Either half can be missing — a flavour with no costed recipe yet, or a
  * sale with no packaging chosen — and the total is simply what is known.
@@ -312,8 +342,7 @@ export function servingCost(
   const packaging = pkg ? packagingCost(v, pkg) : 0;
 
   const recipe = recipeId ? v.recipes.find((r) => r.id === recipeId) : undefined;
-  const litres = pkg ? (pkg.volumeMl || 0) / 1000 : 0;
-  const gelato = recipe ? recipeCost(v, recipe).costPerLitre * litres : 0;
+  const gelato = recipe ? recipeCost(v, recipe).costPerUnit : 0;
 
   return { gelato, packaging, total: gelato + packaging };
 }

@@ -27,7 +27,7 @@ import {
   writeRemembered,
   writeSealed,
 } from "@/lib/os/store";
-import { seedVault } from "@/lib/os/seed";
+import { adopt, seedVault } from "@/lib/os/seed";
 import { ensureToken, pullVault, pushVault, signIn } from "@/lib/os/drive";
 import {
   currentAccount,
@@ -282,7 +282,7 @@ export default function VaultProvider({
       saltRef.current = salt;
       passRef.current = passphrase;
       /* Backfill collections added after this vault was created. */
-      setVault({ ...seedVault(), ...data });
+      setVault(adopt(data));
       setStatus("open");
       return true;
     },
@@ -365,7 +365,7 @@ export default function VaultProvider({
         passRef.current = password;
         lastPushed.current = remote.updatedAt;
         await writeSealed(remote.sealed);
-        setVault({ ...seedVault(), ...data });
+        setVault(adopt(data));
         setStatus("open");
         if (acct) markJoined(acct.id);
         opened = true;
@@ -420,7 +420,7 @@ export default function VaultProvider({
 
       const salt = randomSalt();
       const key = await deriveKey(password, salt);
-      const merged: Vault = { ...seedVault(), ...openedOld };
+      const merged: Vault = adopt(openedOld);
       merged.settings.updatedAt = Date.now();
       const resealed = await seal(key, salt, merged);
 
@@ -598,7 +598,7 @@ export default function VaultProvider({
       const parsed = JSON.parse(json) as Vault;
       if (!parsed || typeof parsed !== "object" || !parsed.settings) return false;
       /* Tolerate backups made before a collection existed. */
-      const merged: Vault = { ...seedVault(), ...parsed };
+      const merged: Vault = adopt(parsed);
       setVault(merged);
       return true;
     } catch {
@@ -636,7 +636,7 @@ export default function VaultProvider({
         throw new Error("That file isn't a Fiori OS backup.");
       }
 
-      const merged: Vault = { ...seedVault(), ...data };
+      const merged: Vault = adopt(data);
       keyRef.current = key;
       saltRef.current = salt;
       passRef.current = passphrase;
@@ -682,7 +682,7 @@ export default function VaultProvider({
       keyRef.current = key;
       saltRef.current = salt;
       passRef.current = passphrase;
-      const merged = { ...seedVault(), ...data };
+      const merged = adopt(data);
       await writeSealed(remote.sealed);
       setVault(merged);
       setStatus("open");
@@ -737,7 +737,7 @@ export default function VaultProvider({
         if (remote.updatedAt > localStamp || joining) {
           applyingRemote.current = true;
           lastPushed.current = remote.updatedAt;
-          setVault({ ...seedVault(), ...opened });
+          setVault(adopt(opened));
           markJoined(acct.id);
           setSyncState("idle");
           setSyncMessage("Updated from your other device");

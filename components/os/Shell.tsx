@@ -6,7 +6,6 @@ import {
   Boxes,
   CalendarDays,
   ChefHat,
-  FileLock2,
   LayoutDashboard,
   Menu,
   Moon,
@@ -28,7 +27,6 @@ import Production from "./modules/Production";
 import Sales from "./modules/Sales";
 import Finance from "./modules/Finance";
 import Planner from "./modules/Planner";
-import Documents from "./modules/Documents";
 import SettingsModule from "./modules/SettingsModule";
 
 export type ModuleKey =
@@ -39,7 +37,6 @@ export type ModuleKey =
   | "sales"
   | "finance"
   | "planner"
-  | "documents"
   | "settings";
 
 const NAV: { key: ModuleKey; label: string; icon: typeof LayoutDashboard }[] = [
@@ -50,7 +47,6 @@ const NAV: { key: ModuleKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: "sales", label: "Sales", icon: ShoppingBag },
   { key: "finance", label: "Finance", icon: Wallet },
   { key: "planner", label: "Planner", icon: CalendarDays },
-  { key: "documents", label: "Documents", icon: FileLock2 },
 ];
 
 const TITLES: Record<ModuleKey, string> = {
@@ -61,7 +57,6 @@ const TITLES: Record<ModuleKey, string> = {
   sales: "Sales",
   finance: "Finance",
   planner: "Planner",
-  documents: "Business documents",
   settings: "Settings",
 };
 
@@ -117,7 +112,6 @@ export default function Shell() {
     vault.equipment.forEach((e) => add(e.name, "Equipment", "finance"));
     vault.expenses.forEach((e) => add(e.description, "Expense", "finance"));
     vault.plan.forEach((p) => add(p.title, "Plan", "planner"));
-    vault.docs.forEach((d) => add(d.title, "Document", "documents"));
     return hits;
   }, [vault, query]);
 
@@ -131,7 +125,6 @@ export default function Shell() {
     sales: Sales,
     finance: Finance,
     planner: Planner,
-    documents: Documents,
     settings: SettingsModule,
   }[module];
 

@@ -4,7 +4,13 @@
  * supplier, the pricing formats and the launch plan are already in place.
  */
 
-import type { CapitalPlanItem, ExpenseCategory, Vault } from "./types";
+import type {
+  CapitalPlanItem,
+  ExpenseCategory,
+  ProductionBatch,
+  Recipe,
+  Vault,
+} from "./types";
 import { uid } from "./format";
 
 export function seedVault(): Vault {
@@ -58,27 +64,14 @@ export function seedVault(): Vault {
     name: "House 500ml tub",
     version: 1,
     stage: "trial" as const,
-    yieldLitres: 8,
+    yieldKg: 5,
     outputItemId: finished500.id,
     outputUnits: 16,
-    sellingPrice: 190,
-    productionMinutes: 60,
-    blastFreezeMinutes: 240,
+    unitType: "500ml tub",
     ingredients: [
       { itemId: base.id, qty: 8 },
       { itemId: tub500.id, qty: 16 },
     ],
-    quality: {
-      appearance: "",
-      texture: "",
-      colour: "",
-      melt: "",
-      overrun: "",
-      taste: "",
-      customerFeedback: "",
-      lessons: "",
-    },
-    photos: [],
     notes:
       "Batch freezer produces roughly 8 litres of finished gelato per hour of practical output.",
     createdAt: new Date().toISOString().slice(0, 10),
@@ -110,7 +103,6 @@ export function seedVault(): Vault {
     settings: {
       businessName: "Fiori Gelato",
       loanCapital: 320000,
-      wastePct: 8,
       theme: "system",
     },
     capitalPlan,
@@ -145,4 +137,38 @@ export function seedVault(): Vault {
     docCategories: [],
     adjustments: [],
   };
+}
+
+/**
+ * Brings a vault opened from anywhere — this device, the cloud, a backup
+ * file — up to the shape the app expects now.
+ *
+ * Collections added since a vault was last written come from the seed; the
+ * stored ones always win. Records are then nudged forward where a field has
+ * been renamed. Fields the app no longer reads are left alone rather than
+ * stripped: an old recipe's photographs and tasting notes are no longer
+ * shown, but they are still in the file, so nothing is thrown away by an
+ * upgrade.
+ */
+export function adopt(data: Partial<Vault> | Vault): Vault {
+  const v: Vault = { ...seedVault(), ...(data as Vault) };
+
+  type OldRecipe = { yieldLitres?: number };
+  v.recipes = (v.recipes ?? []).map((r) => {
+    if (typeof r.yieldKg === "number") return r;
+    /* Yield used to be counted in litres. The number is carried across as
+       it stands rather than converted, because no density is known — it
+       only drives the cost-per-kg reading, never a cost per unit. */
+    const litres = (r as Recipe & OldRecipe).yieldLitres;
+    return { ...r, yieldKg: typeof litres === "number" ? litres : 0 };
+  });
+
+  type OldBatch = { litresProduced?: number };
+  v.production = (v.production ?? []).map((b) => {
+    if (typeof b.kgProduced === "number") return b;
+    const litres = (b as ProductionBatch & OldBatch).litresProduced;
+    return { ...b, kgProduced: typeof litres === "number" ? litres : 0 };
+  });
+
+  return v;
 }

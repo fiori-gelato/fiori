@@ -240,7 +240,7 @@ export default function Inventory() {
                           className="os-btn os-btn--ghost os-btn--sm"
                           onClick={() => setUsing(i.id)}
                         >
-                          <MinusCircle size={13} /> Use
+                          <MinusCircle size={13} /> Use or spoil
                         </button>{" "}
                         <button
                           className="os-btn os-btn--ghost os-btn--sm"
@@ -586,7 +586,7 @@ function UsageForm({ itemId, onClose }: { itemId: string; onClose: () => void })
         >
           <option value="trial">Used in a trial batch</option>
           <option value="usage">Used</option>
-          <option value="waste">Wasted or spoiled</option>
+          <option value="waste">Spoiled or thrown away</option>
           <option value="count">Counted it — set the true figure</option>
         </select>
       </Field>
@@ -647,10 +647,14 @@ function UsageForm({ itemId, onClose }: { itemId: string; onClose: () => void })
         <span className="os-small">
           Stock goes from <strong>{Number(item.stock.toFixed(2))}</strong> to{" "}
           <strong>{Number(result.toFixed(2))}</strong> {item.unit}
-          {!isCount && qty > 0 && (
-            <> · {ZAR(qty * item.unitCost, 2)} of ingredients consumed</>
-          )}
+          {!isCount && qty > 0 && <> · {ZAR(qty * item.unitCost, 2)} worth</>}
         </span>
+        {kind === "waste" && qty > 0 && (
+          <p className="os-small os-muted" style={{ margin: "8px 0 0" }}>
+            {ZAR(qty * item.unitCost, 2)} goes into Finance as spoilage. This is
+            how waste gets counted — nothing is added to your recipes for it.
+          </p>
+        )}
       </Card>
     </Modal>
   );

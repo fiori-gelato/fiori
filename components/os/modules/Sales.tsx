@@ -1,7 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { Download, Plus, Trash2, Users } from "lucide-react";
+import { useId, useState } from "react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Download,
+  Plus,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { useVault } from "../VaultProvider";
 import { Bars, Card, Chip, Empty, Field, Modal, SectionTitle } from "../ui";
 import { postSale, unpostSale } from "@/lib/os/actions";
@@ -340,6 +347,17 @@ export default function Sales() {
   );
 }
 
+/**
+ * A line being typed.
+ *
+ * `cost` is normally worked out from the flavour and the packaging. Setting
+ * it by hand pins it, for the times when a line cost something the recipe
+ * doesn't know about.
+ */
+interface Draft extends SaleLine {
+  ownCost?: number;
+}
+
 function SaleForm({ onClose }: { onClose: () => void }) {
   const { vault, update } = useVault();
   const [date, setDate] = useState(today());
@@ -347,60 +365,77 @@ function SaleForm({ onClose }: { onClose: () => void }) {
   const [customerId, setCustomerId] = useState("");
   const [channelCost, setChannelCost] = useState(0);
   const [payment, setPayment] = useState<"cash" | "card" | "eft" | "platform">("cash");
-  const [lines, setLines] = useState<SaleLine[]>([]);
+  const [details, setDetails] = useState(false);
+  const flavourListId = useId();
+  /* The form opens with one empty line ready, so a sale is four fields and
+     a save rather than a click to begin. */
+  const [lines, setLines] = useState<Draft[]>(() => [
+    {
+      packagingId: vault?.packaging.find((p) => !p.archived)?.id,
+      qty: 1,
+      unitPrice: 0,
+      unitCost: 0,
+    },
+  ]);
   if (!vault) return null;
 
   const finished = vault.inventory.filter((i) => i.category === "finished" && !i.archived);
   const flavours = vault.recipes.filter((r) => r.stage !== "archived");
   const packs = vault.packaging.filter((p) => !p.archived);
 
-  function addLine() {
-    setLines([
-      ...lines,
-      {
-        recipeId: flavours[0]?.id,
-        packagingId: packs[0]?.id,
-        qty: 1,
-        unitPrice: 0,
-        unitCost: 0,
-        fromStock: false,
-      },
-    ]);
-  }
-
-  /* A line's cost follows the flavour and the packaging, so it is worked out
-     rather than stored while the form is open. */
-  function priced(l: SaleLine): SaleLine {
+  /** What the line costs each: the worked-out figure, unless one was typed. */
+  function costEach(l: Draft): number {
+    if (typeof l.ownCost === "number") return l.ownCost;
     if (l.fromStock && l.itemId) {
       const item = vault!.inventory.find((i) => i.id === l.itemId);
-      const pack = l.packagingId ? packagingCost(vault!, vault!.packaging.find((p) => p.id === l.packagingId)!) : 0;
-      return { ...l, unitCost: (item?.unitCost ?? 0) + pack };
+      const pack = l.packagingId
+        ? packagingCost(vault!, vault!.packaging.find((p) => p.id === l.packagingId)!)
+        : 0;
+      return (item?.unitCost ?? 0) + pack;
     }
-    return { ...l, unitCost: servingCost(vault!, l.recipeId, l.packagingId).total };
+    return servingCost(vault!, l.recipeId, l.packagingId).total;
   }
 
-  const revenue = lines.reduce((a, l) => a + l.qty * l.unitPrice, 0);
+  /** Typing a flavour that matches a recipe links it; anything else stands. */
+  function nameFlavour(idx: number, typed: string) {
+    const match = flavours.find(
+      (r) => r.name.toLowerCase() === typed.trim().toLowerCase()
+    );
+    setLines(
+      lines.map((x, i) =>
+        i === idx
+          ? match
+            ? { ...x, recipeId: match.id, description: undefined }
+            : { ...x, recipeId: undefined, description: typed }
+          : x
+      )
+    );
+  }
 
-  const cost = lines.reduce((a, l) => a + l.qty * priced(l).unitCost, 0);
+  const filled = lines.filter(
+    (l) => l.qty > 0 && (l.recipeId || l.itemId || l.description?.trim())
+  );
+  const revenue = filled.reduce((a, l) => a + l.qty * l.unitPrice, 0);
+  const cost = filled.reduce((a, l) => a + l.qty * costEach(l), 0);
 
   function save() {
-    const clean = lines
-      .filter((l) => l.qty > 0 && (l.recipeId || l.itemId || l.description?.trim()))
-      .map(priced);
-    if (!clean.length) return;
+    if (!filled.length) return;
     const sale = {
       id: uid("sal_"),
       date,
       channel,
       customerId: customerId || undefined,
-      lines: clean,
+      lines: filled.map((l) => {
+        const line: SaleLine = { ...l, unitCost: costEach(l) };
+        delete (line as Draft).ownCost;
+        return line;
+      }),
       channelCost,
       paymentMethod: payment,
     };
     update((d) => {
       d.sales.push(sale);
-      const created = d.sales.find((x) => x.id === sale.id)!;
-      postSale(d, created);
+      postSale(d, d.sales.find((x) => x.id === sale.id)!);
     });
     onClose();
   }
@@ -414,22 +449,210 @@ function SaleForm({ onClose }: { onClose: () => void }) {
           <button className="os-btn os-btn--ghost" onClick={onClose}>
             Cancel
           </button>
-          <button className="os-btn" onClick={save} disabled={!lines.length}>
+          <button className="os-btn" onClick={save} disabled={!filled.length}>
             Save · {ZAR(revenue)}
           </button>
         </>
       }
     >
-      <>
-          <div className="os-row">
-            <Field label="Date">
+      <datalist id={flavourListId}>
+        {flavours.map((r) => (
+          <option key={r.id} value={r.name} />
+        ))}
+      </datalist>
+
+      <Field label="Date">
+        <input
+          className="os-input"
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+      </Field>
+
+      <SectionTitle>What was sold</SectionTitle>
+      {lines.map((l, idx) => {
+        const edit = (fn: (x: Draft) => Draft) =>
+          setLines(lines.map((x, i) => (i === idx ? fn(x) : x)));
+        const split = servingCost(vault, l.recipeId, l.packagingId);
+        const item = l.itemId ? vault.inventory.find((i) => i.id === l.itemId) : undefined;
+        const each = costEach(l);
+        const profit = (l.unitPrice - each) * l.qty;
+        const own = typeof l.ownCost === "number";
+        return (
+          <Card key={idx} style={{ marginBottom: 10 }}>
+            <div className="os-row">
+              <Field label="Flavour">
+                <input
+                  className="os-input"
+                  list={flavourListId}
+                  value={
+                    l.recipeId
+                      ? (flavours.find((r) => r.id === l.recipeId)?.name ?? "")
+                      : (l.description ?? "")
+                  }
+                  placeholder="Pistachio"
+                  onChange={(e) => nameFlavour(idx, e.target.value)}
+                />
+              </Field>
+              <Field label="Packaging">
+                <select
+                  className="os-select"
+                  value={l.packagingId ?? ""}
+                  onChange={(e) =>
+                    edit((x) => ({ ...x, packagingId: e.target.value || undefined }))
+                  }
+                >
+                  <option value="">—</option>
+                  {packs.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="How many">
+                <input
+                  className="os-input"
+                  type="number"
+                  min="0"
+                  value={l.qty}
+                  onChange={(e) => edit((x) => ({ ...x, qty: Number(e.target.value) }))}
+                />
+              </Field>
+              <Field label="Sold at, each">
+                <input
+                  className="os-input"
+                  type="number"
+                  step="any"
+                  min="0"
+                  value={l.unitPrice}
+                  onChange={(e) => edit((x) => ({ ...x, unitPrice: Number(e.target.value) }))}
+                />
+              </Field>
+              {own && (
+                <Field label="Costs me, each">
+                  <input
+                    className="os-input"
+                    type="number"
+                    step="any"
+                    min="0"
+                    autoFocus
+                    value={l.ownCost}
+                    onChange={(e) => edit((x) => ({ ...x, ownCost: Number(e.target.value) }))}
+                  />
+                </Field>
+              )}
+              {lines.length > 1 && (
+                <span className="os-shrink">
+                  <button
+                    className="os-btn os-btn--ghost os-btn--sm"
+                    onClick={() => setLines(lines.filter((_, i) => i !== idx))}
+                    aria-label="Remove line"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </span>
+              )}
+            </div>
+
+            <div className="os-split">
+              <span>
+                Costs <strong>{ZAR(each, 2)}</strong> each
+                {!own && (
+                  <span className="os-muted">
+                    {" "}
+                    (gelato {ZAR(l.fromStock && item ? item.unitCost : split.gelato, 2)} +
+                    packaging {ZAR(split.packaging, 2)})
+                  </span>
+                )}
+              </span>
+              <span>
+                Gross profit{" "}
+                <strong
+                  style={{ color: profit >= 0 ? "var(--os-accent)" : "var(--os-danger)" }}
+                >
+                  {ZAR(profit, 2)}
+                </strong>
+              </span>
+              <button
+                className="os-btn os-btn--ghost os-btn--sm os-right"
+                onClick={() =>
+                  edit((x) => ({ ...x, ownCost: own ? undefined : Number(each.toFixed(2)) }))
+                }
+              >
+                {own ? "Work it out for me" : "Set the cost myself"}
+              </button>
+            </div>
+
+            <label className="os-check" style={{ marginTop: 8 }}>
               <input
-                className="os-input"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
+                type="checkbox"
+                checked={!!l.fromStock}
+                onChange={(e) =>
+                  edit((x) => ({
+                    ...x,
+                    fromStock: e.target.checked,
+                    itemId: e.target.checked ? (x.itemId ?? finished[0]?.id) : x.itemId,
+                  }))
+                }
               />
-            </Field>
+              <span className="os-small">
+                Take this out of the freezer
+                <span className="os-muted">
+                  {" "}
+                  — leave it off if you made it fresh for the order.
+                </span>
+              </span>
+            </label>
+            {l.fromStock && (
+              <Field label="Which stock">
+                <select
+                  className="os-select"
+                  value={l.itemId ?? ""}
+                  onChange={(e) => edit((x) => ({ ...x, itemId: e.target.value || undefined }))}
+                >
+                  <option value="">—</option>
+                  {finished.map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {i.name} ({i.stock} in stock)
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+          </Card>
+        );
+      })}
+      <button
+        className="os-btn os-btn--ghost os-btn--sm"
+        onClick={() =>
+          setLines([...lines, { packagingId: packs[0]?.id, qty: 1, unitPrice: 0, unitCost: 0 }])
+        }
+      >
+        <Plus size={13} /> Add another
+      </button>
+
+      {/* Channel, customer and the rest are the same most days, so they stay
+          folded away with sensible defaults rather than asked every time. */}
+      <div style={{ marginTop: 14 }}>
+        <button
+          className="os-btn os-btn--ghost os-btn--sm"
+          onClick={() => setDetails(!details)}
+        >
+          {details ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+          {details ? "Hide the rest" : "Where, who and how it was paid"}
+          {!details && (
+            <span className="os-muted">
+              {" "}
+              — {CHANNEL_LABEL[channel]}, {payment}
+            </span>
+          )}
+        </button>
+      </div>
+      {details && (
+        <Card style={{ marginTop: 10 }}>
+          <div className="os-row">
             <Field label="Channel">
               <select
                 className="os-select"
@@ -457,16 +680,6 @@ function SaleForm({ onClose }: { onClose: () => void }) {
                 ))}
               </select>
             </Field>
-          </div>
-          <div className="os-row">
-            <Field label="Channel cost (commission, stall, delivery)">
-              <input
-                className="os-input"
-                type="number"
-                value={channelCost}
-                onChange={(e) => setChannelCost(Number(e.target.value))}
-              />
-            </Field>
             <Field label="Payment">
               <select
                 className="os-select"
@@ -479,190 +692,38 @@ function SaleForm({ onClose }: { onClose: () => void }) {
                 <option value="platform">Platform</option>
               </select>
             </Field>
+            <Field label="Commission, stall or delivery">
+              <input
+                className="os-input"
+                type="number"
+                step="any"
+                min="0"
+                value={channelCost}
+                onChange={(e) => setChannelCost(Number(e.target.value))}
+              />
+            </Field>
           </div>
+        </Card>
+      )}
 
-          <SectionTitle>What was sold</SectionTitle>
-          {!packs.length && (
-            <p className="os-small" style={{ color: "var(--os-caramel)" }}>
-              No packaging set up yet. Add a format under Inventory → Packaging
-              and its cost will carry into every sale. You can still record
-              sales without it.
-            </p>
-          )}
-          {lines.map((l, idx) => {
-            const edit = (fn: (x: SaleLine) => SaleLine) =>
-              setLines(lines.map((x, i) => (i === idx ? fn(x) : x)));
-            const shown = priced(l);
-            const split = servingCost(vault, l.recipeId, l.packagingId);
-            const item = l.itemId ? vault.inventory.find((i) => i.id === l.itemId) : undefined;
-            const profit = (shown.unitPrice - shown.unitCost) * shown.qty;
-            return (
-              <Card key={idx} style={{ marginBottom: 10 }}>
-                <div className="os-row">
-                  <Field label="Flavour">
-                    <select
-                      className="os-select"
-                      value={l.recipeId ?? ""}
-                      onChange={(e) =>
-                        edit((x) => ({
-                          ...x,
-                          recipeId: e.target.value || undefined,
-                          description: e.target.value ? undefined : x.description,
-                        }))
-                      }
-                    >
-                      <option value="">— type it in myself —</option>
-                      {flavours.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  {!l.recipeId && (
-                    <Field label="Called">
-                      <input
-                        className="os-input"
-                        value={l.description ?? ""}
-                        placeholder="Cherry &amp; dark chocolate"
-                        onChange={(e) => edit((x) => ({ ...x, description: e.target.value }))}
-                      />
-                    </Field>
-                  )}
-                  <Field label="Packaging">
-                    <select
-                      className="os-select"
-                      value={l.packagingId ?? ""}
-                      onChange={(e) =>
-                        edit((x) => ({ ...x, packagingId: e.target.value || undefined }))
-                      }
-                    >
-                      <option value="">—</option>
-                      {packs.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} ({p.volumeMl}ml)
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                </div>
-
-                <div className="os-row">
-                  <Field label="How many">
-                    <input
-                      className="os-input"
-                      type="number"
-                      value={l.qty}
-                      onChange={(e) => edit((x) => ({ ...x, qty: Number(e.target.value) }))}
-                    />
-                  </Field>
-                  <Field label="Sold at, each">
-                    <input
-                      className="os-input"
-                      type="number"
-                      step="any"
-                      value={l.unitPrice}
-                      onChange={(e) => edit((x) => ({ ...x, unitPrice: Number(e.target.value) }))}
-                    />
-                  </Field>
-                  <span className="os-shrink">
-                    <button
-                      className="os-btn os-btn--ghost os-btn--sm"
-                      onClick={() => setLines(lines.filter((_, i) => i !== idx))}
-                      aria-label="Remove line"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </span>
-                </div>
-
-                <label className="os-check" style={{ marginBottom: 8 }}>
-                  <input
-                    type="checkbox"
-                    checked={!!l.fromStock}
-                    onChange={(e) =>
-                      edit((x) => ({
-                        ...x,
-                        fromStock: e.target.checked,
-                        itemId: e.target.checked ? (x.itemId ?? finished[0]?.id) : x.itemId,
-                      }))
-                    }
-                  />
-                  <span>
-                    Take this out of the freezer
-                    <span className="os-small os-muted">
-                      {" "}
-                      — leave it off if you made this fresh for the order.
-                    </span>
-                  </span>
-                </label>
-
-                {l.fromStock && (
-                  <Field label="Which stock">
-                    <select
-                      className="os-select"
-                      value={l.itemId ?? ""}
-                      onChange={(e) => edit((x) => ({ ...x, itemId: e.target.value || undefined }))}
-                    >
-                      <option value="">—</option>
-                      {finished.map((i) => (
-                        <option key={i.id} value={i.id}>
-                          {i.name} ({i.stock} in stock)
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                )}
-
-                <div className="os-split">
-                  <span>
-                    Gelato <strong>{ZAR(l.fromStock && item ? item.unitCost : split.gelato, 2)}</strong>
-                  </span>
-                  <span>
-                    Packaging <strong>{ZAR(split.packaging, 2)}</strong>
-                  </span>
-                  <span>
-                    Cost each <strong>{ZAR(shown.unitCost, 2)}</strong>
-                  </span>
-                  <span>
-                    Gross profit{" "}
-                    <strong style={{ color: profit >= 0 ? "var(--os-accent)" : "var(--os-danger)" }}>
-                      {ZAR(profit, 2)}
-                    </strong>
-                  </span>
-                </div>
-                {l.fromStock && item && l.qty > item.stock && (
-                  <p className="os-small" style={{ color: "var(--os-caramel)", margin: "6px 0 0" }}>
-                    Only {item.stock} in stock — recorded anyway, and stock will
-                    go to zero rather than negative.
-                  </p>
-                )}
-              </Card>
-            );
-          })}
-          <button className="os-btn os-btn--ghost os-btn--sm" onClick={addLine}>
-            <Plus size={13} /> Add another
-          </button>
-
-          <Card style={{ marginTop: 14 }}>
-            <div className="os-grid os-grid--3">
-              <div>
-                <div className="os-stat-label">Revenue</div>
-                <div className="os-stat-value" style={{ fontSize: 20 }}>{ZAR(revenue)}</div>
-              </div>
-              <div>
-                <div className="os-stat-label">Gross profit</div>
-                <div className="os-stat-value" style={{ fontSize: 20 }}>{ZAR(revenue - cost)}</div>
-              </div>
-              <div>
-                <div className="os-stat-label">Net of channel cost</div>
-                <div className="os-stat-value" style={{ fontSize: 20 }}>
-                  {ZAR(revenue - cost - channelCost)}
-                </div>
-              </div>
+      <Card style={{ marginTop: 14 }}>
+        <div className="os-grid os-grid--3">
+          <div>
+            <div className="os-stat-label">Revenue</div>
+            <div className="os-stat-value" style={{ fontSize: 20 }}>{ZAR(revenue)}</div>
+          </div>
+          <div>
+            <div className="os-stat-label">Gross profit</div>
+            <div className="os-stat-value" style={{ fontSize: 20 }}>{ZAR(revenue - cost)}</div>
+          </div>
+          <div>
+            <div className="os-stat-label">After commission</div>
+            <div className="os-stat-value" style={{ fontSize: 20 }}>
+              {ZAR(revenue - cost - channelCost)}
             </div>
-          </Card>
-      </>
+          </div>
+        </div>
+      </Card>
     </Modal>
   );
 }
